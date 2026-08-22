@@ -40,6 +40,7 @@ created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 ## Functional Requirements
 ## Non-Functional Requirements
 ## Success Criteria
+## Testing Strategy
 ## Constraints & Assumptions
 ## Out of Scope
 ## Dependencies
@@ -50,6 +51,7 @@ created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 - User stories include acceptance criteria
 - Success criteria are measurable
 - Out of scope is explicitly listed
+- Testing Strategy identifies what must be verified per functional requirement (application code only — config/docs/infra are exempt)
 
 **After creation**: Confirm "✅ PRD created: `.claude/prds/<name>.md`" and suggest: "Ready to create technical epic? Say: parse the <name> PRD"
 
@@ -85,6 +87,10 @@ github: (will be set on sync)
 ### Frontend Components
 ### Backend Services
 ### Infrastructure
+## Testing Strategy
+### Unit Test Approach
+### What Needs Coverage
+### Out of Scope for Testing
 ## Implementation Strategy
 ## Task Breakdown Preview
 ## Dependencies
@@ -96,6 +102,7 @@ github: (will be set on sync)
 - Aim for ≤10 tasks total — prefer simplicity over completeness.
 - Look for ways to leverage existing functionality before creating new code.
 - Identify parallelization opportunities in the task breakdown preview.
+- For every Frontend/Backend component in Technical Approach, define its corresponding unit test approach in Testing Strategy before decomposing into tasks. "Out of Scope for Testing" lists non-application artifacts (config, docs, infra/build scripts, generated code) that don't require unit tests.
 
 **After creation**: Confirm "✅ Epic created: `.claude/epics/<name>/epic.md`" and suggest: "Ready to decompose into tasks? Say: decompose the <name> epic"
 

@@ -2,6 +2,8 @@
 
 This phase covers pushing local epics/tasks to GitHub as issues, syncing progress as comments, and closing issues when work is done.
 
+All `gh` commands in this phase follow the availability/fallback rule in conventions.md § Authentication & MCP Fallback.
+
 ---
 
 ## Repository Safety Check
@@ -159,6 +161,9 @@ Add sync marker to local files to prevent duplicate comments:
 ## Closing an Issue
 
 **Trigger**: User marks a task complete.
+
+### Preflight
+- Verify `.claude/epics/*/updates/<N>/review.md` exists with `verdict: passed`. If missing or `verdict: changes_requested`, stop and run the review step in execute.md § Mandatory Review first.
 
 ### Process
 

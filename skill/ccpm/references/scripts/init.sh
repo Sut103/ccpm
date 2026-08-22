@@ -38,29 +38,34 @@ else
     sudo apt-get update && sudo apt-get install gh
   else
     echo "  Please install GitHub CLI manually: https://cli.github.com/"
-    exit 1
+    echo "  Continuing without gh — ccpm will fall back to GitHub MCP tools where available."
   fi
 fi
 
-# Check gh auth status
-echo ""
-echo "🔐 Checking GitHub authentication..."
-if gh auth status &> /dev/null; then
-  echo "  ✅ GitHub authenticated"
-else
-  echo "  ⚠️ GitHub not authenticated"
-  echo "  Running: gh auth login"
-  gh auth login
-fi
+if command -v gh &> /dev/null; then
+  # Check gh auth status
+  echo ""
+  echo "🔐 Checking GitHub authentication..."
+  if gh auth status &> /dev/null; then
+    echo "  ✅ GitHub authenticated"
+  else
+    echo "  ⚠️ GitHub not authenticated"
+    echo "  Running: gh auth login"
+    gh auth login
+  fi
 
-# Check for gh-sub-issue extension
-echo ""
-echo "📦 Checking gh extensions..."
-if gh extension list | grep -q "yahsan2/gh-sub-issue"; then
-  echo "  ✅ gh-sub-issue extension installed"
+  # Check for gh-sub-issue extension
+  echo ""
+  echo "📦 Checking gh extensions..."
+  if gh extension list | grep -q "yahsan2/gh-sub-issue"; then
+    echo "  ✅ gh-sub-issue extension installed"
+  else
+    echo "  📥 Installing gh-sub-issue extension..."
+    gh extension install yahsan2/gh-sub-issue
+  fi
 else
-  echo "  📥 Installing gh-sub-issue extension..."
-  gh extension install yahsan2/gh-sub-issue
+  echo ""
+  echo "🔐 Skipping gh auth/extension checks — gh not installed. GitHub operations will use MCP tools instead."
 fi
 
 # Create directory structure
@@ -106,7 +111,7 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
       echo ""
     else
       # Create GitHub labels if this is a GitHub repository
-      if gh repo view &> /dev/null; then
+      if command -v gh &> /dev/null && gh repo view &> /dev/null; then
         echo ""
         echo "🏷️ Creating GitHub labels..."
         
@@ -178,9 +183,13 @@ echo "✅ Initialization Complete!"
 echo "=========================="
 echo ""
 echo "📊 System Status:"
-gh --version | head -1
-echo "  Extensions: $(gh extension list | wc -l) installed"
-echo "  Auth: $(gh auth status 2>&1 | grep -o 'Logged in to [^ ]*' || echo 'Not authenticated')"
+if command -v gh &> /dev/null; then
+  gh --version | head -1
+  echo "  Extensions: $(gh extension list | wc -l) installed"
+  echo "  Auth: $(gh auth status 2>&1 | grep -o 'Logged in to [^ ]*' || echo 'Not authenticated')"
+else
+  echo "  gh CLI: not installed — GitHub operations will use MCP tools instead"
+fi
 echo ""
 echo "🎯 Next Steps:"
 echo "  1. Create your first PRD: /pm:prd-new <feature-name>"

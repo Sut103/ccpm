@@ -21,6 +21,7 @@ Read this before doing any file operations across all phases.
 │   │       └── <issue_N>/
 │   │           ├── stream-A.md    # Per-agent progress
 │   │           ├── progress.md    # Overall issue progress
+│   │           ├── review.md      # Mandatory code-review verdict before closing
 │   │           └── execution.md  # Execution state
 │   └── archived/
 │       └── <feature-name>/        # Completed epics
@@ -78,6 +79,16 @@ completion: 0%
 ---
 ```
 
+### Review (.claude/epics/<name>/updates/<N>/review.md)
+```yaml
+---
+issue: <N>
+reviewed: <ISO 8601>
+model: <model actually used for the review, e.g. haiku>
+verdict: passed | changes_requested
+---
+```
+
 ---
 
 ## Datetime Rule
@@ -117,11 +128,29 @@ fi
 REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 ```
 
-### Authentication
-Don't pre-check authentication. Run the `gh` command and handle failure:
+### Authentication & MCP Fallback
+Don't pre-check authentication for `gh` itself — run the command and handle failure. But do check whether `gh` is installed at all, since some environments only offer the GitHub MCP server:
+
 ```bash
-gh <command> || echo "❌ GitHub CLI failed. Run: gh auth login"
+if command -v gh >/dev/null 2>&1; then
+  gh <command> || echo "❌ GitHub CLI failed. Run: gh auth login"
+else
+  echo "ℹ️ gh CLI not found — falling back to MCP GitHub tools."
+  # Use the equivalent mcp__github__* tool instead (see table below).
+fi
 ```
+
+If `gh` is not installed/available in this environment, use the GitHub MCP server tools (commonly prefixed `mcp__github__*`) as a drop-in replacement. Exact tool names vary by MCP server configuration — check the available tool list — but the common mapping is:
+
+| gh command | MCP tool equivalent |
+|---|---|
+| `gh issue create` | `mcp__github__issue_write` (method: create) |
+| `gh issue view <N> --json ...` | `mcp__github__issue_read` |
+| `gh issue edit <N> --add-assignee/--add-label` | `mcp__github__issue_write` (method: update) |
+| `gh issue comment <N>` | `mcp__github__add_issue_comment` |
+| `gh issue close <N>` | `mcp__github__issue_write` (method: update, state: closed) |
+| `gh label create/list` | no direct equivalent — skip label automation and note it for manual follow-up |
+| `gh extension list/install` (gh-sub-issue) | not available via MCP — fall back to plain "Fixes #N" linking in the issue body |
 
 ### Getting Issue Numbers
 ```bash

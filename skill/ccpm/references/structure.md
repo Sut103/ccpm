@@ -30,6 +30,8 @@ Read the epic fully. Analyze for parallelism — which pieces of work can happen
 - Medium (5–10 tasks): batch into 2–3 groups, spawn parallel Task agents
 - Large (>10 tasks): analyze dependencies first, launch parallel agents (max 5 concurrent), create dependent tasks after prerequisites
 
+When writing each task, populate the Test Plan section by turning each Acceptance Criteria item into a concrete unit test description — for application-code tasks, this test plan must exist before implementation begins (tests are planned alongside the implementation plan, not after it).
+
 For parallel creation, use the Task tool:
 ```yaml
 Task:
@@ -64,6 +66,10 @@ conflicts_with: []
 ## Acceptance Criteria
 - [ ]
 
+## Test Plan (write first — TDD)
+Applies only to application code (business logic, services, components). For pure config, docs, infra/build-script, or generated-code tasks, write `N/A — non-application task` here instead.
+- [ ] <unit test — maps to acceptance criterion above>
+
 ## Technical Details
 
 ## Dependencies
@@ -73,9 +79,10 @@ conflicts_with: []
 - Hours: N
 
 ## Definition of Done
-- [ ] Code implemented
-- [ ] Tests written and passing
-- [ ] Code reviewed
+- [ ] RED: Failing unit tests written for every acceptance criterion (application code only)
+- [ ] GREEN: Implementation makes all tests pass
+- [ ] Refactor complete, tests still passing
+- [ ] Code reviewed (see mandatory review step in execute.md)
 ```
 
 **Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitHub issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
