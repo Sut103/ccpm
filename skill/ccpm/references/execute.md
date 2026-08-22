@@ -238,13 +238,15 @@ verdict: passed | changes_requested
 - In Progress: already has an execution file
 - Complete: status=closed
 
+A `depends_on` entry is only "met" once the prerequisite task's `status` is `closed` — not merely `completed`. `status: closed` requires sync.md's "Closing an Issue" Preflight, which requires `review.md` verdict: passed (the "Mandatory Review" step under "Starting an Issue" above). This is deliberate: a dependent stream should never build on a prerequisite's implementation before it has passed mandatory review, since review may still change that implementation.
+
 **Step 3 — Analyze any ready tasks** that don't have an analysis file yet (run issue analysis inline).
 
 **Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above.
 
 **Step 5 — Create/update** `.claude/epics/<name>/execution-status.md` with all active agents and queued issues.
 
-**Step 6 — As agents complete**, check if blocked issues are now unblocked and launch those agents.
+**Step 6 — As issues close** (i.e., after the "Mandatory Review" step passes and sync.md closes them — not merely when a stream self-reports `status: completed`), check if blocked issues are now unblocked and launch those agents.
 
 ---
 
