@@ -49,24 +49,33 @@ epic_number=$(gh issue create \
 
 Check if `gh-sub-issue` extension is available:
 ```bash
-if gh extension list | grep -q "yahsan2/gh-sub-issue"; then
+if command -v gh &> /dev/null && gh extension list | grep -q "yahsan2/gh-sub-issue"; then
   use_subissues=true
+else
+  use_subissues=false
+  # gh not installed, or the extension isn't present — per conventions.md's fallback
+  # table, fall back to plain "Fixes #<parent_number>" linking in the issue body.
 fi
 ```
 
 For <5 tasks: create sequentially.
-For ≥5 tasks: use parallel Task agents (3-4 tasks per batch).
+For ≥5 tasks: use parallel Task agents (3-4 tasks per batch). Each agent runs in its own shell context, so include the resolved `use_subissues` (true/false) and `epic_number` values directly in that agent's prompt — do not assume the variables set above are visible to it.
 
 Per task:
 ```bash
 sed '1,/^---$/d; 1,/^---$/d' <task_file> > /tmp/task-body.md
+if [ "$use_subissues" = false ]; then
+  # No gh-sub-issue extension available — link back to the parent epic issue directly in the body.
+  { echo "Fixes #$epic_number"; echo; cat /tmp/task-body.md; } > /tmp/task-body.md.tmp
+  mv /tmp/task-body.md.tmp /tmp/task-body.md
+fi
 task_number=$(gh issue create \
   --repo "$REPO" \
   --title "<task_name>" \
   --body-file /tmp/task-body.md \
   --label "task,epic:<name>" \
   --json number -q .number)
-# or with sub-issues:
+# or with sub-issues (when $use_subissues is true):
 # gh sub-issue create --parent $epic_number ...
 ```
 
@@ -191,7 +200,7 @@ gh issue edit <epic_N> --body-file /tmp/epic-body.md
 ### Preflight
 - Verify worktree `../epic-<name>` exists.
 - Check for uncommitted changes in the worktree — block if dirty.
-- Warn if any task issues are still open.
+- Block if any task issue is not `status: closed`. Closing an issue already requires `review.md` verdict: passed (see "Closing an Issue" above), so this transitively guarantees every task in the epic was reviewed before merge. Do not allow "merge anyway" — close the remaining issues first.
 
 ### Process
 

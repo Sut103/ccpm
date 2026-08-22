@@ -139,6 +139,8 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
         else
           echo "  ❌ Could not create GitHub labels (check repository permissions)"
         fi
+      elif ! command -v gh &> /dev/null; then
+        echo "  ℹ️ gh CLI not installed - skipping label creation (GitHub MCP tools will be used instead where needed)"
       else
         echo "  ℹ️ Not a GitHub repository - skipping label creation"
       fi

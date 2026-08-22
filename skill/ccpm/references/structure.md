@@ -67,7 +67,7 @@ conflicts_with: []
 - [ ]
 
 ## Test Plan (write first — TDD)
-Applies only to application code (business logic, services, components). For pure config, docs, infra/build-script, or generated-code tasks, write `N/A — non-application task` here instead.
+Applies only to application code (business logic, services, components). List one unit test per relevant Acceptance Criteria item. If this task will later split into multiple streams (see execute.md Issue Analysis) and some streams are pure config/docs/infra/generated-code, list tests only for the application-code portions — do not mark the whole task `N/A` unless *none* of it is application code. Write `N/A — non-application task` only when the entire task is non-application.
 - [ ] <unit test — maps to acceptance criterion above>
 
 ## Technical Details

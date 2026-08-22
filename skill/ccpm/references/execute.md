@@ -127,12 +127,13 @@ Task:
     Instructions:
     1. Read full task from: .claude/epics/<epic>/<N>.md
     2. Read analysis from: .claude/epics/<epic>/<N>-analysis.md
-    3. If this stream's scope is application code (per the task's Test Plan section), follow strict TDD:
+    3. Check whether this stream's assigned files/scope correspond to entries in the task's Test Plan section (if the mapping isn't exact by file path, use judgment: does this stream implement business logic/services/components the Test Plan lists tests for, versus pure config/docs/infra it doesn't?). If it's application code, follow strict TDD:
        a. RED — write the failing unit test(s) for the next acceptance criterion; run them and confirm they fail for the expected reason.
        b. GREEN — write the minimum implementation to make those tests pass; run them and confirm they pass.
        c. Refactor while keeping tests green; re-run after every change.
        Repeat per acceptance criterion. Never write implementation code before its test exists.
-       This rule does not apply to config, docs, infra/build scripts, or generated files — implement those directly.
+       If this stream's scope is entirely config/docs/infra/generated code with no corresponding Test Plan entries, implement directly — no TDD required.
+       If this stream's scope mixes both (some files have Test Plan entries, some don't), apply RED/GREEN/refactor only to the files with entries; implement the rest directly.
     4. Work ONLY in your assigned files
     5. Commit frequently: "Issue #<N>: <specific change>"
     6. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
@@ -179,7 +180,14 @@ Sync updates: "sync issue <N>"
 
 Once every stream for this issue reports `status: completed`:
 
-1. Identify this issue's oldest matching commit in the worktree: `git log --oneline --reverse --grep="^Issue #<N>:" | head -1` (the diff is everything from just before that commit through HEAD).
+1. From inside the epic worktree (`cd ../epic-<name>/`), collect only this issue's own commits, in chronological order — never a commit range, since other issues' agents may be committing to this same shared worktree/branch concurrently (see "Starting a Full Epic" and "Agent Coordination Rules" below) and would otherwise leak into a range diff:
+```bash
+cd ../epic-<name>/
+git log --grep="^Issue #<N>:" -p --reverse > /tmp/issue-<N>-diff.patch
+if [ ! -s /tmp/issue-<N>-diff.patch ]; then
+  echo "❌ No commits matched '^Issue #<N>:' — check the commit message format (see Step 3) before continuing. Do not proceed to review with an empty diff."
+fi
+```
 2. Launch a review subagent on a cheap model:
 ```yaml
 Task:
@@ -188,12 +196,13 @@ Task:
   model: haiku   # cheapest current Claude tier — use whatever the latest Haiku release is at run time; substitute the equivalent low-cost tier if not running on Claude
   prompt: |
     Review the changes for Issue #<N> in ../epic-<name>/.
-    Diff to review: git diff <oldest_commit_of_issue>^..HEAD
+    Diff to review: /tmp/issue-<N>-diff.patch (this issue's own commits only — do not substitute a commit-range diff, which may include other issues' concurrent work on the same branch)
     Invoke the `code-review` skill against this diff at effort level "medium".
     Report findings using the skill's normal findings format.
 ```
 3. Triage every finding immediately (do not defer to a later task) — the skill's "medium" effort level does not always attach a CONFIRMED/PLAUSIBLE verdict, so triage by substance, not by the presence of that label:
-   - Any correctness bug, or any finding that would block a task that lists this issue in its `depends_on`, must be fixed now: write a failing regression test first (RED), fix it (GREEN), re-run tests.
+   - Application code (per Step 3's TDD scope): any correctness bug, or any finding that would block a task that lists this issue in its `depends_on`, must be fixed now — write a failing regression test first (RED), fix it (GREEN), re-run tests.
+   - Non-application code (config/docs/infra/build-scripts/generated — TDD-exempt per Step 3): fix correctness bugs directly, no preceding test required; still fix immediately if it would block a dependent task.
    - Only pure style/naming/simplification findings with no functional impact may be recorded and deferred without blocking.
 4. Record the outcome at `.claude/epics/<epic>/updates/<N>/review.md`:
 ```markdown
