@@ -30,7 +30,7 @@ Read the epic fully. Analyze for parallelism — which pieces of work can happen
 - Medium (5–10 tasks): batch into 2–3 groups, spawn parallel Task agents
 - Large (>10 tasks): analyze dependencies first, launch parallel agents (max 5 concurrent), create dependent tasks after prerequisites
 
-When writing each task, populate the テスト計画（先に書く — TDD）section by turning each 受け入れ基準 item into a concrete unit test description — for application-code tasks, this test plan must exist before implementation begins (tests are planned alongside the implementation plan, not after it).
+When writing each task, populate the Test Plan section by turning each Acceptance Criteria item into a concrete unit test description — for application-code tasks, this test plan must exist before implementation begins (tests are planned alongside the implementation plan, not after it).
 
 For parallel creation, use the Task tool:
 ```yaml
@@ -59,33 +59,33 @@ parallel: true
 conflicts_with: []
 ---
 
-# タスク: <Task Title>
+# Task: <Task Title>
 
-## 概要
+## Description
 
-## 受け入れ基準
+## Acceptance Criteria
 - [ ]
 
-## テスト計画（先に書く — TDD）
-アプリケーションコード（ビジネスロジック・サービス・コンポーネント）のみが対象。受け入れ基準の各項目につき単体テストを1つ列挙する。このタスクが後で複数streamに分割され（execute.mdのIssue Analysis参照）、一部のstreamが純粋なconfig/docs/infra/生成コードである場合は、アプリケーションコード部分のみテストを列挙する — タスク全体を`N/A`とするのは、その全てが非アプリケーションコードの場合のみ。タスク全体が非アプリケーションの場合のみ `N/A — 非アプリケーションタスク` と記載する。
-- [ ] <単体テスト — 上記の受け入れ基準に対応>
+## Test Plan (write first — TDD)
+Applies only to application code (business logic, services, components). List one unit test per relevant Acceptance Criteria item. If this task will later split into multiple streams (see execute.md Issue Analysis) and some streams are pure config/docs/infra/generated-code, list tests only for the application-code portions — do not mark the whole task `N/A` unless *none* of it is application code. Write `N/A — non-application task` only when the entire task is non-application.
+- [ ] <unit test — maps to acceptance criterion above>
 
-## 技術詳細
+## Technical Details
 
-## 依存関係
+## Dependencies
 
-## 見積もり工数
-- 規模: XS/S/M/L/XL
-- 時間: N
+## Effort Estimate
+- Size: XS/S/M/L/XL
+- Hours: N
 
-## 完了の定義
-- [ ] RED: 受け入れ基準ごとに失敗する単体テストを書く（アプリケーションコードのみ）
-- [ ] GREEN: 実装によって全テストを成功させる
-- [ ] リファクタリング完了、テストは引き続き成功
-- [ ] コードレビュー済み（execute.mdの必須レビュー手順を参照）
+## Definition of Done
+- [ ] RED: Failing unit tests written for every acceptance criterion (application code only)
+- [ ] GREEN: Implementation makes all tests pass
+- [ ] Refactor complete, tests still passing
+- [ ] Code reviewed (see mandatory review step in execute.md)
 ```
 
-Write this in Japanese per conventions.md § Language & Content Style (the single source of truth for what stays in English vs. Japanese).
+Section headings stay in English (this skill's own vocabulary — see conventions.md § Language & Content Style). Write the Task Title and the actual content under each heading in Japanese, since the title is used verbatim as the GitHub issue title and the content is what a Japanese-speaking user reads.
 
 **Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitHub issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
 
@@ -94,14 +94,14 @@ Write this in Japanese per conventions.md § Language & Content Style (the singl
 Append a summary to the epic file:
 
 ```markdown
-## 作成されたタスク
-- [ ] 001.md - <Title>（parallel: true/false）
-- [ ] 002.md - <Title>（parallel: true/false）
+## Tasks Created
+- [ ] 001.md - <Title> (parallel: true/false)
+- [ ] 002.md - <Title> (parallel: true/false)
 
-合計タスク数: N
-並列タスク数: N
-逐次タスク数: N
-見積もり合計工数: N時間
+Total tasks: N
+Parallel tasks: N
+Sequential tasks: N
+Estimated total effort: N hours
 ```
 
 **After completion**: Confirm "✅ Created N tasks for epic: <name>" and suggest: "Ready to push to GitHub? Say: sync the <name> epic"

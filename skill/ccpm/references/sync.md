@@ -39,7 +39,7 @@ Strip frontmatter from epic.md, then:
 sed '1,/^---$/d; 1,/^---$/d' .claude/epics/<name>/epic.md > /tmp/epic-body.md
 epic_number=$(gh issue create \
   --repo "$REPO" \
-  --title "エピック: <name>" \
+  --title "Epic: <name>" \
   --body-file /tmp/epic-body.md \
   --label "epic,epic:<name>,feature" \
   --json number -q .number)
@@ -66,7 +66,7 @@ Per task:
 sed '1,/^---$/d; 1,/^---$/d' <task_file> > /tmp/task-body.md
 if [ "$use_subissues" = false ]; then
   # No gh-sub-issue extension available — link back to the parent epic issue directly in the body.
-  { echo "親エピック: #$epic_number"; echo; cat /tmp/task-body.md; } > /tmp/task-body.md.tmp
+  { echo "Part of #$epic_number"; echo; cat /tmp/task-body.md; } > /tmp/task-body.md.tmp
   mv /tmp/task-body.md.tmp /tmp/task-body.md
 fi
 task_number=$(gh issue create \
@@ -143,19 +143,19 @@ Format and post a comment:
 gh issue comment <N> --body-file /tmp/update-comment.md
 ```
 
-Comment format (Japanese — see conventions.md § Language & Content Style):
+Comment format (headings stay in English per conventions.md § Language & Content Style; write the content under each heading in Japanese):
 ```markdown
-## 🔄 進捗アップデート - <date>
+## 🔄 Progress Update - <date>
 
-### ✅ 完了した作業
-### 🔄 進行中
-### 📝 技術メモ
-### 📊 受け入れ基準の状況
-### 🚀 次のステップ
-### ⚠️ ブロッカー
+### ✅ Completed Work
+### 🔄 In Progress
+### 📝 Technical Notes
+### 📊 Acceptance Criteria Status
+### 🚀 Next Steps
+### ⚠️ Blockers
 
 ---
-*進捗: N% | 同期日時: <timestamp>*
+*Progress: N% | Synced at <timestamp>*
 ```
 
 After posting: update `last_sync` in progress.md frontmatter, update `updated` in the task file.
@@ -180,7 +180,7 @@ Add sync marker to local files to prevent duplicate comments:
 2. Update frontmatter: `status: closed`, `updated: <now>`.
 3. Post completion comment:
 ```bash
-echo "✅ タスク完了 — すべての受け入れ基準を満たしました。" | gh issue comment <N> --body-file -
+echo "✅ Task completed — all acceptance criteria met." | gh issue comment <N> --body-file -
 gh issue close <N>
 ```
 4. Check off the task in the epic issue body:
@@ -225,7 +225,7 @@ mv .claude/epics/<name> .claude/epics/archived/
 
 # Close GitHub issues
 epic_issue=$(grep 'github:' .claude/epics/archived/<name>/epic.md | grep -oE '[0-9]+$')
-gh issue close $epic_issue -c "エピック完了、mainにマージ済み"
+gh issue close $epic_issue -c "Epic completed and merged to main"
 ```
 
 Update epic.md frontmatter: `status: completed`.
@@ -250,7 +250,7 @@ Also read the local task file if it exists: `.claude/epics/*/<original_N>.md`
 
 ```markdown
 ---
-name: "バグ: <short description>"
+name: "Bug: <short description>"
 status: open
 created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 updated: <same>
@@ -261,30 +261,30 @@ conflicts_with: []
 bug_for: <original_N>
 ---
 
-# バグ: <short description>
+# Bug: <short description>
 
-## 背景
-Issue #<original_N>（<original title>）の作業/テスト中に発見
+## Context
+Found while working on / testing issue #<original_N>: <original title>
 
-## 概要
-<何が壊れているか>
+## Description
+<what's broken>
 
-## 再現手順
-<手順>
+## Steps to Reproduce
+<steps>
 
-## 期待結果と実際の結果
-- 期待結果: 
-- 実際の結果: 
+## Expected vs Actual
+- Expected: 
+- Actual: 
 
-## 受け入れ基準
-- [ ] バグが修正されている
-- [ ] 元のIssue #<original_N> の挙動に影響がない
+## Acceptance Criteria
+- [ ] Bug is fixed
+- [ ] Original issue #<original_N> behaviour is unaffected
 
-## 見積もり工数
-- 規模: XS/S
+## Effort Estimate
+- Size: XS/S
 ```
 
-Write this in Japanese per conventions.md § Language & Content Style (the single source of truth for what stays in English vs. Japanese). Quote the `name:` value (as shown) since it contains a colon, which would otherwise break YAML parsing — keep it identical to the `# バグ: ...` heading and the issue title in Step 3 below, just quoted.
+Section headings and checklist wording stay in English (this skill's own vocabulary — see conventions.md § Language & Content Style); write the actual `<short description>`/`<what's broken>`/`<steps>` content in Japanese. Quote the `name:` value (as shown) since a Japanese short description commonly reads better with a colon, which would otherwise break YAML parsing — keep it identical to the issue title in Step 3 below, just quoted.
 
 Save to `.claude/epics/<same_epic_as_original>/bug-<original_N>-<slug>.md`
 
@@ -292,19 +292,19 @@ Save to `.claude/epics/<same_epic_as_original>/bug-<original_N>-<slug>.md`
 ```bash
 gh issue create \
   --repo "$REPO" \
-  --title "バグ: <short description>" \
+  --title "Bug: <short description>" \
   --body "$(cat /tmp/bug-body.md)" \
   --label "bug,epic:<epic_name>" \
   --json number -q .number
 ```
 
-The issue body should open with `関連: #<original_N>` so GitHub auto-links them (no need for the English "Fixes" keyword here — this is an issue body, not a PR/commit, so GitHub's auto-close keywords don't apply; a plain `#<N>` reference is enough to create the backlink).
+The issue body should open with `Related to #<original_N>` so GitHub auto-links them.
 
 **Step 4 — Update the local file** with the GitHub issue number and rename to `<new_N>.md`.
 
 **Output:**
 ```
-✅ Bug issue created: #<new_N> — "バグ: <short description>"
+✅ Bug issue created: #<new_N> — "Bug: <short description>"
   Linked to: #<original_N>
   Epic: <epic_name>
 

@@ -32,28 +32,28 @@ status: backlog
 created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 ---
 
-# 要件定義書: <feature-name>
+# PRD: <feature-name>
 
-## エグゼクティブサマリー
-## 課題
-## ユーザーストーリー
-## 機能要件
-## 非機能要件
-## 成功基準
-## テスト戦略
-## 制約と前提条件
-## スコープ外
-## 依存関係
+## Executive Summary
+## Problem Statement
+## User Stories
+## Functional Requirements
+## Non-Functional Requirements
+## Success Criteria
+## Testing Strategy
+## Constraints & Assumptions
+## Out of Scope
+## Dependencies
 ```
 
-Write this in Japanese per conventions.md § Language & Content Style (the single source of truth for what stays in English vs. Japanese).
+Section headings stay in English (this skill's own vocabulary — see conventions.md § Language & Content Style). Write the actual content under each heading in Japanese, since that's what a Japanese-speaking user reads.
 
 **Quality gates before saving:**
 - No placeholder text in any section
 - User stories include acceptance criteria
 - Success criteria are measurable
 - Out of scope is explicitly listed
-- Testing Strategy (テスト戦略) identifies what must be verified per functional requirement (application code only — config/docs/infra are exempt)
+- Testing Strategy identifies what must be verified per functional requirement (application code only — config/docs/infra are exempt)
 
 **After creation**: Confirm "✅ PRD created: `.claude/prds/<name>.md`" and suggest: "Ready to create technical epic? Say: parse the <name> PRD"
 
@@ -81,32 +81,32 @@ prd: .claude/prds/<name>.md
 github: (will be set on sync)
 ---
 
-# エピック: <feature-name>
+# Epic: <feature-name>
 
-## 概要
-## アーキテクチャ上の決定事項
-## 技術的アプローチ
-### フロントエンドコンポーネント
-### バックエンドサービス
-### インフラストラクチャ
-## テスト戦略
-### 単体テスト方針
-### カバレッジ対象
-### テスト対象外
-## 実装方針
-## タスク分解プレビュー
-## 依存関係
-## 成功基準（技術面）
-## 見積もり工数
+## Overview
+## Architecture Decisions
+## Technical Approach
+### Frontend Components
+### Backend Services
+### Infrastructure
+## Testing Strategy
+### Unit Test Approach
+### What Needs Coverage
+### Out of Scope for Testing
+## Implementation Strategy
+## Task Breakdown Preview
+## Dependencies
+## Success Criteria (Technical)
+## Estimated Effort
 ```
 
-Write this in Japanese per conventions.md § Language & Content Style (the single source of truth for what stays in English vs. Japanese).
+Section headings stay in English (this skill's own vocabulary — see conventions.md § Language & Content Style). Write the actual content under each heading in Japanese, since that's what a Japanese-speaking user reads.
 
 **Key constraints:**
 - Aim for ≤10 tasks total — prefer simplicity over completeness.
 - Look for ways to leverage existing functionality before creating new code.
 - Identify parallelization opportunities in the task breakdown preview.
-- For every フロントエンドコンポーネント/バックエンドサービス in 技術的アプローチ, define its corresponding unit test approach in テスト戦略 before decomposing into tasks. テスト対象外 lists non-application artifacts (config, docs, infra/build scripts, generated code) that don't require unit tests.
+- For every Frontend/Backend component in Technical Approach, define its corresponding unit test approach in Testing Strategy before decomposing into tasks. "Out of Scope for Testing" lists non-application artifacts (config, docs, infra/build scripts, generated code) that don't require unit tests.
 
 **After creation**: Confirm "✅ Epic created: `.claude/epics/<name>/epic.md`" and suggest: "Ready to decompose into tasks? Say: decompose the <name> epic"
 

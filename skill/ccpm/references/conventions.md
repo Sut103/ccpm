@@ -6,17 +6,23 @@ Read this before doing any file operations across all phases.
 
 ## Language & Content Style
 
-All content this skill authors — PRDs, epics, tasks, bug reports, and anything posted to GitHub (issue titles, issue bodies, pull request titles/bodies) — must be written in Japanese (日本語). This includes prose section headers (e.g. `## 概要` rather than `## Overview`), so that issues read naturally on GitHub, not just the paragraph content under them.
+Template structure — section headings (`## Overview`, `## Acceptance Criteria`, etc.), fixed checklist wording (Definition of Done, Effort Estimate labels), canned comment templates (progress-update headers, completion/close messages), and `<placeholder>` markers — stays in English. This is this skill's own fixed vocabulary, shared across plan.md/structure.md/sync.md/execute.md, and translating it earlier caused templates to drift out of sync with the cross-references that name them (e.g. execute.md's Step 3 reading "the task's Test Plan section", referring to structure.md's `## Test Plan (write first — TDD)` heading).
+
+Written in Japanese instead — except each template's own fixed "PRD:"/"Epic:"/"Task:"/"Bug:" label (used in that file's own H1 heading, and for Epic/Bug also in the GitHub issue `--title`), which is template vocabulary like any other heading and stays English; only the content after that fixed label is Japanese. A Task issue's actual GitHub title and `name:` frontmatter value carry no such label at all (just `<task_name>` — sync.md's `--title "<task_name>"` has no "Task:" prefix), even though the task file's own local H1 heading does say "# Task: ...", the same as every other template's H1:
+- GitHub issue titles (`gh issue create --title ...`) and, for the Task/Bug templates, the `name:` frontmatter field that becomes that title verbatim.
+- The PRD's `description:` field (a one-line prose summary).
+- The actual free-form content a PRD/epic/task/bug report is filled in with — the paragraphs, acceptance-criteria bullets, and test-plan entries the agent authors under each (English) heading. That's what a Japanese-speaking user actually reads; the heading above it is just a label.
 
 This is the single source of truth for the rule — plan.md, structure.md, and sync.md's templates just point back here rather than restating it, so update it in one place.
 
+If a template heading is ever renamed, grep the other reference files for its old exact text and update every cross-reference to match verbatim — e.g. execute.md's "Starting an Issue" → Step 3 per-stream agent prompt names "the task's Test Plan section" by that exact heading text from structure.md; a rename that isn't propagated leaves the two out of sync (`validate.sh` and friends only parse frontmatter, not prose headers, so this only affects other `.md` instruction files).
+
 Exceptions — keep these in English/ASCII, since scripts and this skill's own instructions parse them literally:
 - YAML frontmatter *structural* keys and enum-like values: `status`, `parallel`, `depends_on`, `conflicts_with`, `github`, `created`/`updated` dates, `progress`, `bug_for` (e.g. `status: open`, `parallel: true`, `depends_on: []`)
-- The PRD's and Epic's `name:` frontmatter field — this *is* the kebab-case feature-name slug (`user-auth`), reused verbatim to build file paths (`.claude/epics/<name>/`, `../epic-<name>/`) and must stay ASCII. The Task's and Bug's `name:` field is different: it's a human-readable title with no slug role, used verbatim as the GitHub issue title (`gh issue create --title "<task_name>"` in sync.md) — write it in Japanese. The PRD's `description:` (a one-line prose summary, not a slug) is likewise Japanese.
-  Always wrap these Japanese `name:`/`description:` values in double quotes (`name: "バグ: ログイン失敗"`), even when today's text happens not to contain a colon — a natural Japanese title often reads better with one (e.g. `見出し: 詳細`), and an unquoted colon-plus-space inside a YAML value breaks frontmatter parsing.
-- Section header labels this skill's own instructions reference by exact text — e.g. execute.md's "Starting an Issue" → Step 3 per-stream agent prompt reads "the task's テスト計画（先に書く — TDD）section" precisely because structure.md's header was renamed to that exact text; when renaming a template header, grep the other reference files for its old name and update every cross-reference to match verbatim (`validate.sh` and friends only parse frontmatter, not prose headers, so this only affects other `.md` instruction files)
+- The PRD's and Epic's `name:` frontmatter field — this *is* the kebab-case feature-name slug (`user-auth`), reused verbatim to build file paths (`.claude/epics/<name>/`, `../epic-<name>/`) and must stay ASCII.
+- The Task's and Bug's `name:` field is different: it's the human-readable title used verbatim as the GitHub issue title (per the Japanese/label split above) — always wrap it in double quotes (`name: "Bug: ログイン失敗"`), since the Bug template's embedded "Bug:" colon would otherwise break YAML frontmatter parsing. The Task template has no fixed label to worry about, but quote it too whenever the Japanese title happens to contain its own colon.
 
-This skill has no pull-request-creation step today — `gh pr create` appears nowhere in these reference docs, and "Merging an Epic" (sync.md) merges the epic branch directly with `git merge` rather than opening a PR. If a future step in this workflow ever opens a pull request, its title and body must follow the same Japanese rule above, and the body specifically must stay concise: lead with the key point (what changed and why), skip anything redundant with the diff or the linked issue, and prefer a short bulleted summary over long prose.
+This skill has no pull-request-creation step today — `gh pr create` appears nowhere in these reference docs, and "Merging an Epic" (sync.md) merges the epic branch directly with `git merge` rather than opening a PR. If a future step in this workflow ever opens a pull request, its title (and the `name:`-style field feeding it, if any) follows the same Japanese rule above, its section headings stay English the same way, and the body specifically must stay concise: lead with the key point (what changed and why), skip anything redundant with the diff or the linked issue, and prefer a short bulleted summary over long prose.
 
 ---
 
@@ -166,7 +172,7 @@ If `gh` is not installed/available in this environment, use the GitHub MCP serve
 | `gh issue comment <N>` | `mcp__github__add_issue_comment` |
 | `gh issue close <N>` | `mcp__github__issue_write` (method: update, state: closed) |
 | `gh label create/list` | no direct equivalent — skip label automation and note it for manual follow-up |
-| `gh extension list/install` (gh-sub-issue) | not available via MCP — fall back to a plain `#N` reference in the issue body (see sync.md's "親エピック: #N" pattern) |
+| `gh extension list/install` (gh-sub-issue) | not available via MCP — fall back to a plain `#N` reference in the issue body (see sync.md's "Part of #N" pattern) |
 
 ### Getting Issue Numbers
 ```bash
