@@ -67,7 +67,7 @@ for epic_dir in .claude/epics/*/; do
       deps=""
     fi
     if [ -z "$deps" ] || [ "$deps" = "depends_on:" ]; then
-      task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
+      task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
       task_num=$(basename "$task_file" .md)
       echo "  • #$task_num - $task_name"
       ((count++))

@@ -24,7 +24,7 @@ if [ -d ".claude/epics" ]; then
       # Get task name from the task file
       task_file=".claude/epics/$epic_name/$issue_num.md"
       if [ -f "$task_file" ]; then
-        task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
+        task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
       else
         task_name="Unknown task"
       fi
@@ -53,7 +53,7 @@ for epic_dir in .claude/epics/*/; do
 
   status=$(grep "^status:" "$epic_dir/epic.md" | head -1 | sed 's/^status: *//')
   if [ "$status" = "in-progress" ] || [ "$status" = "active" ]; then
-    epic_name=$(grep "^name:" "$epic_dir/epic.md" | head -1 | sed 's/^name: *//')
+    epic_name=$(grep "^name:" "$epic_dir/epic.md" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
     progress=$(grep "^progress:" "$epic_dir/epic.md" | head -1 | sed 's/^progress: *//')
     [ -z "$epic_name" ] && epic_name=$(basename "$epic_dir")
     [ -z "$progress" ] && progress="0%"

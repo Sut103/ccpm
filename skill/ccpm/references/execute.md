@@ -127,13 +127,13 @@ Task:
     Instructions:
     1. Read full task from: .claude/epics/<epic>/<N>.md
     2. Read analysis from: .claude/epics/<epic>/<N>-analysis.md
-    3. Check whether this stream's assigned files/scope correspond to entries in the task's Test Plan section (if the mapping isn't exact by file path, use judgment: does this stream implement business logic/services/components the Test Plan lists tests for, versus pure config/docs/infra it doesn't?). If it's application code, follow strict TDD:
+    3. Check whether this stream's assigned files/scope correspond to entries in the task's テスト計画（先に書く — TDD）section (if the mapping isn't exact by file path, use judgment: does this stream implement business logic/services/components the テスト計画 lists tests for, versus pure config/docs/infra it doesn't?). If it's application code, follow strict TDD:
        a. RED — write the failing unit test(s) for the next acceptance criterion; run them and confirm they fail for the expected reason.
        b. GREEN — write the minimum implementation to make those tests pass; run them and confirm they pass.
        c. Refactor while keeping tests green; re-run after every change.
        Repeat per acceptance criterion. Never write implementation code before its test exists.
-       If this stream's scope is entirely config/docs/infra/generated code with no corresponding Test Plan entries, implement directly — no TDD required.
-       If this stream's scope mixes both (some files have Test Plan entries, some don't), apply RED/GREEN/refactor only to the files with entries; implement the rest directly.
+       If this stream's scope is entirely config/docs/infra/generated code with no corresponding テスト計画 entries, implement directly — no TDD required.
+       If this stream's scope mixes both (some files have テスト計画 entries, some don't), apply RED/GREEN/refactor only to the files with entries; implement the rest directly.
     4. Work ONLY in your assigned files
     5. Commit frequently: "Issue #<N>: <specific change>"
     6. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md

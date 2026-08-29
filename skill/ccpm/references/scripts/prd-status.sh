@@ -48,7 +48,7 @@ echo "  Total PRDs: $total"
 echo ""
 echo "📅 Recent PRDs (last 5 modified):"
 ls -t .claude/prds/*.md 2>/dev/null | head -5 | while read file; do
-  name=$(grep "^name:" "$file" | head -1 | sed 's/^name: *//')
+  name=$(grep "^name:" "$file" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
   [ -z "$name" ] && name=$(basename "$file" .md)
   echo "  • $name"
 done

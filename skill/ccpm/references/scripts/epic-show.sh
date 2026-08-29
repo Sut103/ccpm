@@ -53,7 +53,7 @@ for task_file in "$epic_dir"/[0-9]*.md; do
   [ -f "$task_file" ] || continue
 
   task_num=$(basename "$task_file" .md)
-  task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
+  task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
   task_status=$(grep "^status:" "$task_file" | head -1 | sed 's/^status: *//')
   parallel=$(grep "^parallel:" "$task_file" | head -1 | sed 's/^parallel: *//')
 

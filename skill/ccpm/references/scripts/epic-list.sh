@@ -21,7 +21,7 @@ for dir in .claude/epics/*/; do
   [ -f "$dir/epic.md" ] || continue
 
   # Extract metadata
-  n=$(grep "^name:" "$dir/epic.md" | head -1 | sed 's/^name: *//')
+  n=$(grep "^name:" "$dir/epic.md" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
   s=$(grep "^status:" "$dir/epic.md" | head -1 | sed 's/^status: *//' | tr '[:upper:]' '[:lower:]')
   p=$(grep "^progress:" "$dir/epic.md" | head -1 | sed 's/^progress: *//')
   g=$(grep "^github:" "$dir/epic.md" | head -1 | sed 's/^github: *//')

@@ -34,7 +34,7 @@ for epic_dir in .claude/epics/*/; do
 
     # If no dependencies or empty, task is available
     if [ -z "$deps" ] || [ "$deps" = "depends_on:" ]; then
-      task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
+      task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
       task_num=$(basename "$task_file" .md)
       parallel=$(grep "^parallel:" "$task_file" | head -1 | sed 's/^parallel: *//')
 

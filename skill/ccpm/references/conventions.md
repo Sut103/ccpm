@@ -4,6 +4,22 @@ Read this before doing any file operations across all phases.
 
 ---
 
+## Language & Content Style
+
+All content this skill authors — PRDs, epics, tasks, bug reports, and anything posted to GitHub (issue titles, issue bodies, pull request titles/bodies) — must be written in Japanese (日本語). This includes prose section headers (e.g. `## 概要` rather than `## Overview`), so that issues read naturally on GitHub, not just the paragraph content under them.
+
+This is the single source of truth for the rule — plan.md, structure.md, and sync.md's templates just point back here rather than restating it, so update it in one place.
+
+Exceptions — keep these in English/ASCII, since scripts and this skill's own instructions parse them literally:
+- YAML frontmatter *structural* keys and enum-like values: `status`, `parallel`, `depends_on`, `conflicts_with`, `github`, `created`/`updated` dates, `progress`, `bug_for` (e.g. `status: open`, `parallel: true`, `depends_on: []`)
+- The PRD's and Epic's `name:` frontmatter field — this *is* the kebab-case feature-name slug (`user-auth`), reused verbatim to build file paths (`.claude/epics/<name>/`, `../epic-<name>/`) and must stay ASCII. The Task's and Bug's `name:` field is different: it's a human-readable title with no slug role, used verbatim as the GitHub issue title (`gh issue create --title "<task_name>"` in sync.md) — write it in Japanese. The PRD's `description:` (a one-line prose summary, not a slug) is likewise Japanese.
+  Always wrap these Japanese `name:`/`description:` values in double quotes (`name: "バグ: ログイン失敗"`), even when today's text happens not to contain a colon — a natural Japanese title often reads better with one (e.g. `見出し: 詳細`), and an unquoted colon-plus-space inside a YAML value breaks frontmatter parsing.
+- Section header labels this skill's own instructions reference by exact text — e.g. execute.md's "Starting an Issue" → Step 3 per-stream agent prompt reads "the task's テスト計画（先に書く — TDD）section" precisely because structure.md's header was renamed to that exact text; when renaming a template header, grep the other reference files for its old name and update every cross-reference to match verbatim (`validate.sh` and friends only parse frontmatter, not prose headers, so this only affects other `.md` instruction files)
+
+This skill has no pull-request-creation step today — `gh pr create` appears nowhere in these reference docs, and "Merging an Epic" (sync.md) merges the epic branch directly with `git merge` rather than opening a PR. If a future step in this workflow ever opens a pull request, its title and body must follow the same Japanese rule above, and the body specifically must stay concise: lead with the key point (what changed and why), skip anything redundant with the diff or the linked issue, and prefer a short bulleted summary over long prose.
+
+---
+
 ## Directory Structure
 
 ```
@@ -35,8 +51,8 @@ Read this before doing any file operations across all phases.
 ### PRD (.claude/prds/<name>.md)
 ```yaml
 ---
-name: <feature-name>        # kebab-case, matches filename
-description: <one-liner>    # used in lists and summaries
+name: <feature-name>          # kebab-case, matches filename — ASCII, not Japanese (see § Language & Content Style)
+description: "<one-liner>"    # Japanese prose, quoted — used in lists and summaries
 status: backlog | active | completed
 created: <ISO 8601>         # date -u +"%Y-%m-%dT%H:%M:%SZ"
 ---
@@ -58,7 +74,7 @@ github: https://github.com/<owner>/<repo>/issues/<N>  # set on sync
 ### Task (.claude/epics/<name>/<N>.md)
 ```yaml
 ---
-name: <Task Title>
+name: "<Task Title>"          # Japanese, quoted — used verbatim as the GitHub issue title
 status: open | in-progress | closed
 created: <ISO 8601>
 updated: <ISO 8601>
@@ -150,7 +166,7 @@ If `gh` is not installed/available in this environment, use the GitHub MCP serve
 | `gh issue comment <N>` | `mcp__github__add_issue_comment` |
 | `gh issue close <N>` | `mcp__github__issue_write` (method: update, state: closed) |
 | `gh label create/list` | no direct equivalent — skip label automation and note it for manual follow-up |
-| `gh extension list/install` (gh-sub-issue) | not available via MCP — fall back to plain "Fixes #N" linking in the issue body |
+| `gh extension list/install` (gh-sub-issue) | not available via MCP — fall back to a plain `#N` reference in the issue body (see sync.md's "親エピック: #N" pattern) |
 
 ### Getting Issue Numbers
 ```bash
