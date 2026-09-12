@@ -36,7 +36,7 @@ REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 
 Strip frontmatter from epic.md, then:
 ```bash
-sed '1,/^---$/d; 1,/^---$/d' .claude/epics/<name>/epic.md > /tmp/epic-body.md
+sed '1,/^---$/d' .claude/epics/<name>/epic.md > /tmp/epic-body.md
 epic_number=$(gh issue create \
   --repo "$REPO" \
   --title "Epic: <name>" \
@@ -61,18 +61,18 @@ fi
 For <5 tasks: create sequentially.
 For ≥5 tasks: use parallel Task agents (3-4 tasks per batch). Each agent runs in its own shell context, so include the resolved `use_subissues` (true/false) and `epic_number` values directly in that agent's prompt — do not assume the variables set above are visible to it.
 
-Per task:
+Per task (namespace temp files by the task's current filename number — parallel batches write these concurrently, and a shared path would race):
 ```bash
-sed '1,/^---$/d; 1,/^---$/d' <task_file> > /tmp/task-body.md
+sed '1,/^---$/d' <task_file> > /tmp/task-body-<task_num>.md
 if [ "$use_subissues" = false ]; then
   # No gh-sub-issue extension available — link back to the parent epic issue directly in the body.
-  { echo "Part of #$epic_number"; echo; cat /tmp/task-body.md; } > /tmp/task-body.md.tmp
-  mv /tmp/task-body.md.tmp /tmp/task-body.md
+  { echo "Part of #$epic_number"; echo; cat /tmp/task-body-<task_num>.md; } > /tmp/task-body-<task_num>.md.tmp
+  mv /tmp/task-body-<task_num>.md.tmp /tmp/task-body-<task_num>.md
 fi
 task_number=$(gh issue create \
   --repo "$REPO" \
   --title "<task_name>" \
-  --body-file /tmp/task-body.md \
+  --body-file /tmp/task-body-<task_num>.md \
   --label "task,epic:<name>" \
   --json number -q .number)
 # or with sub-issues (when $use_subissues is true):
@@ -99,13 +99,7 @@ sed -i.bak "/^updated:/c\\updated: $current_date" <file>
 rm <file>.bak
 ```
 
-**Step 5 — Create worktree for the epic:**
-```bash
-git checkout main && git pull origin main
-git worktree add ../epic-<name> -b epic/<name>
-```
-
-**Step 6 — Create github-mapping.md:**
+**Step 5 — Create github-mapping.md:**
 ```markdown
 # GitHub Issue Mapping
 Epic: #<N> - https://github.com/<repo>/issues/<N>
@@ -114,12 +108,13 @@ Tasks:
 Synced: <datetime>
 ```
 
+No worktree or branch is created here — each task gets its own worktree/branch (and Stacked PR) only when work on it actually starts, per execute.md § Starting an Issue.
+
 **Output:**
 ```
 ✅ Synced epic <name> to GitHub
   Epic: #<N>
   Tasks: N sub-issues
-  Worktree: ../epic-<name>
   Next: "start working on issue <N>" or "start the <name> epic"
 ```
 
@@ -167,65 +162,69 @@ Add sync marker to local files to prevent duplicate comments:
 
 ---
 
-## Closing an Issue
+## Merging a Task PR
 
-**Trigger**: User marks a task complete.
+**Trigger**: This task's Mandatory Review (execute.md § Starting an Issue, Step 8) reports `verdict: passed`, or the user explicitly asks to merge/close a task's PR.
+
+This is the actual completion mechanism now that PRs are per-task and stacked (see conventions.md § Git / Worktree Conventions) — there's no separate epic-wide merge step. Merging bottom-up through a stack is what lands every task on `main`.
 
 ### Preflight
 - Verify `.claude/epics/*/updates/<N>/review.md` exists with `verdict: passed`. If missing or `verdict: changes_requested`, stop and run the review step in execute.md § Mandatory Review first.
+- Check for uncommitted changes in the task's worktree (`../epic-<name>-<N>/`) — block if dirty; `git worktree remove` below refuses to remove a dirty worktree, so a stream that left uncommitted work must commit or discard it first.
+- Run project tests if detectable in the task's worktree — `npm test` / `pytest` / `cargo test` / `go test` / etc.
+- If this task's PR is stacked on another task's still-open PR, its base hasn't merged yet — merge dependencies first (the stack merges bottom-up).
 
 ### Process
 
-1. Find the local task file (`.claude/epics/*/<N>.md`).
-2. Update frontmatter: `status: closed`, `updated: <now>`.
-3. Post completion comment:
 ```bash
-echo "✅ Task completed — all acceptance criteria met." | gh issue comment <N> --body-file -
-gh issue close <N>
+pr_number=$(grep '^pr_number:' .claude/epics/<epic>/updates/<N>/pr.md | sed 's/^pr_number: *//')
+gh pr merge "$pr_number" --squash    # or --merge/--rebase per project convention; auto-closes issue #<N> via "Closes #<N>" in the PR body
+
+# Cleanup this task's worktree/branch — from the main repo checkout, not from
+# inside the worktree itself (git refuses to remove your current directory)
+cd <main repo root>
+git worktree remove ../epic-<name>-<N>
+git branch -D epic/<name>/<N>   # -D, not -d: after a squash merge the branch's
+                                  # own commits are never ancestors of the target,
+                                  # so the safe delete would refuse
+git push origin --delete epic/<name>/<N>
 ```
-4. Check off the task in the epic issue body:
+
+If another task's branch was stacked on this one, GitHub retargets its open PR to this PR's base automatically once `epic/<name>/<N>` is deleted; that task's agent should still `git pull --rebase origin <new_base>` in its own worktree to pick up the merged changes before continuing.
+
+**Post-merge bookkeeping** (the issue itself is already closed by GitHub via `Closes #<N>`), done from the main repo checkout on an up-to-date `main` (`git pull origin main` first):
+1. Update the local task file's frontmatter: `status: closed`, `updated: <now>`.
+2. Check off the task in the epic issue body:
 ```bash
 gh issue view <epic_N> --json body -q .body > /tmp/epic-body.md
 sed -i "s/- \[ \] #<N>/- [x] #<N>/" /tmp/epic-body.md
 gh issue edit <epic_N> --body-file /tmp/epic-body.md
 ```
-5. Recalculate and update epic progress: `progress = closed_tasks / total_tasks * 100`
+3. Recalculate and update epic progress: `progress = closed_tasks / total_tasks * 100`
+4. Commit and push these `.claude/` updates to `main` — other tasks' `next.sh`/`blocked.sh` reads and any future stacking decisions depend on this task's `status: closed` being visible outside this checkout.
 
 ---
 
-## Merging an Epic
+## Epic Completion
 
-**Trigger**: User wants to merge a completed epic back to main.
+**Trigger**: Every task issue in the epic is `status: closed` (i.e., every Stacked PR has merged) — check with `references/scripts/epic-status.sh <name>`, or the user asks to wrap up the epic.
+
+There's no epic-wide merge here — each task's PR already merged individually via "Merging a Task PR" above. This step just closes out bookkeeping once nothing is left open.
 
 ### Preflight
-- Verify worktree `../epic-<name>` exists.
-- Check for uncommitted changes in the worktree — block if dirty.
-- Block if any task issue is not `status: closed`. Closing an issue already requires `review.md` verdict: passed (see "Closing an Issue" above), so this transitively guarantees every task in the epic was reviewed before merge. Do not allow "merge anyway" — close the remaining issues first.
+- Verify no task issue in the epic has `status` other than `closed`. If any are still open, stop and finish those first (see "Merging a Task PR") — do not offer a "close anyway".
+- Verify no leftover worktrees remain: `git worktree list | grep "epic-<name>-"` — remove any (each should already have been cleaned up when its PR merged).
 
 ### Process
 
 ```bash
-# From worktree: run project tests if detectable
-cd ../epic-<name>
-# detect and run: npm test / pytest / cargo test / go test / etc.
-
-# From main repo:
-git checkout main && git pull origin main
-git merge epic/<name> --no-ff -m "Merge epic: <name>"
-git push origin main
-
-# Cleanup
-git worktree remove ../epic-<name>
-git branch -d epic/<name>
-git push origin --delete epic/<name>
-
 # Archive
 mkdir -p .claude/epics/archived/
 mv .claude/epics/<name> .claude/epics/archived/
 
-# Close GitHub issues
+# Close the epic issue
 epic_issue=$(grep 'github:' .claude/epics/archived/<name>/epic.md | grep -oE '[0-9]+$')
-gh issue close $epic_issue -c "Epic completed and merged to main"
+gh issue close $epic_issue -c "Epic completed — all tasks merged to main"
 ```
 
 Update epic.md frontmatter: `status: completed`.

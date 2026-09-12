@@ -109,7 +109,7 @@ Estimated total effort: N hours
 ---
 
 ## Dependency Rules
-- `depends_on` lists task numbers that must complete before this task can start.
+- `depends_on` lists task numbers this task builds on. A task with zero unmet dependencies can start right away; one with exactly one unmet dependency can also start once that dependency has itself started (has its own branch), stacking as a GitHub Stacked PR on it (conventions.md § Git / Worktree Conventions) rather than waiting for it to merge — see execute.md § Starting a Full Epic. Two or more unmet dependencies block start, since a branch/PR can only stack on one base.
 - `parallel: true` means the task can run concurrently with others it doesn't conflict with.
 - `conflicts_with` lists tasks that touch the same files — these cannot run in parallel.
 - Circular dependencies are an error — check before finalizing.

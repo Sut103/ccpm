@@ -86,15 +86,43 @@ parallelization_factor: <1.0-5.0>
 1. Verify issue exists and is open: `gh issue view <N> --json state,title,labels,body`
 2. Find local task file (as above).
 3. Check for analysis file: `.claude/epics/*/<N>-analysis.md` — if missing, run analysis first (or do both in sequence: analyze then start).
-4. Verify epic worktree exists: `git worktree list | grep "epic-<name>"` — if not: "❌ No worktree. Sync the epic first."
+4. Check `depends_on`: every entry must have `status: closed`, except at most one may still be open — and that one must already have *started* (its own worktree/branch exists — check `.claude/epics/<epic>/updates/<dep_N>/execution.md`), since that's what this task stacks its branch on. Two or more still-open entries, or a single still-open one that hasn't started yet, means this task isn't ready — stop and say what to wait for, rather than guessing.
+5. Check whether this task's worktree already exists: `[ -d ../epic-<name>-<N> ]` (an exact path check — `git worktree list | grep` on a bare number would also match e.g. task 12 while checking task 1). If it exists, skip Step 2 entirely and resume from the existing `pr.md` (read `base`/`pr_number` from it) instead of recreating the worktree or re-initializing `pr.md`.
+6. Check for a leftover flat `epic/<name>` branch/ref from the old one-branch-per-epic model this workflow replaced: `git branch --list "epic/<name>"`. If found, it collides with the new `epic/<name>/<N>` ref namespace (git can't have a branch be both a leaf and a directory) — delete it first (`git branch -D epic/<name>`; `git push origin --delete epic/<name>` if it was pushed) once you've confirmed it's not in-use work.
 
 ### Process
 
 **Step 1 — Read the analysis**, identify which streams can start immediately vs. which have dependencies.
 
-**Step 2 — Create progress tracking:**
+**Step 2 — Determine this task's base branch and create its worktree** (skip this step entirely if Preflight found an existing worktree — one worktree per task; see conventions.md § Git / Worktree Conventions for the stacking rule). Fetch instead of checking out `main` in the shared repo, since "Starting a Full Epic" may run this step for several independent tasks in parallel and a shared `git checkout`/`git pull` would race between them:
+```bash
+git fetch origin main
+# Check depends_on entries' status in their task files (Preflight already
+# confirmed at most one is unmet).
+if [ -z "$depends_on" ] || <every depends_on entry has status: closed>; then
+  base="main"
+  base_ref="origin/main"
+else
+  base="epic/<name>/<dep_N>"   # the single unmet dependency from Preflight
+  base_ref="$base"
+fi
+git worktree add ../epic-<name>-<N> -b epic/<name>/<N> "$base_ref"
+```
+Record `base` now — Step 7 (which may run in a different session) reads it back rather than recomputing it, since `depends_on`'s live status can change between now and then:
 ```bash
 mkdir -p .claude/epics/<epic>/updates/<N>
+cat > .claude/epics/<epic>/updates/<N>/pr.md << EOF
+---
+issue: <N>
+branch: epic/<name>/<N>
+base: $base
+pr_number:
+---
+EOF
+```
+
+**Step 3 — Create progress tracking** (the `updates/<N>/` directory already exists from Step 2):
+```bash
 current_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 ```
 
@@ -111,15 +139,15 @@ status: in_progress
 - Starting implementation
 ```
 
-**Step 3 — Launch parallel agents** for each stream that can start immediately:
+**Step 4 — Launch parallel agents** for each stream that can start immediately:
 
 ```yaml
 Task:
   description: "Issue #<N> Stream <X>"
   subagent_type: "general-purpose"
   prompt: |
-    You are working on Issue #<N> in the epic worktree at: ../epic-<name>/
-    
+    You are working on Issue #<N> in its own worktree at: ../epic-<name>-<N>/
+
     Your stream: <stream_name>
     Your scope — files to modify: <file_patterns>
     Work to complete: <stream_description>
@@ -145,12 +173,12 @@ Task:
 
 Streams with unmet dependencies are queued — launch them as their dependencies complete.
 
-**Step 4 — Assign on GitHub:**
+**Step 5 — Assign on GitHub:**
 ```bash
 gh issue edit <N> --add-assignee @me --add-label "in-progress"
 ```
 
-**Step 5 — Create execution status file** at `.claude/epics/<epic>/updates/<N>/execution.md`:
+**Step 6 — Create execution status file** at `.claude/epics/<epic>/updates/<N>/execution.md`:
 ```markdown
 ## Active Streams
 - Stream A: <name> — Started <time>
@@ -176,35 +204,56 @@ Monitor: check progress in .claude/epics/<epic>/updates/<N>/
 Sync updates: "sync issue <N>"
 ```
 
-**Step 6 — Mandatory Review (before the issue can close):**
-
-Once every stream for this issue reports `status: completed`:
-
-1. From inside the epic worktree (`cd ../epic-<name>/`), collect only this issue's own commits, in chronological order — never a commit range, since other issues' agents may be committing to this same shared worktree/branch concurrently (see "Starting a Full Epic" and "Agent Coordination Rules" below) and would otherwise leak into a range diff:
+**Step 7 — Push the branch and open this task's PR** once every stream for this issue reports `status: completed`. This is a Stacked PR, not an epic-sized one — its base is whatever this task actually branched from in Step 2, read back from `pr.md` (not recomputed, since dependency status may have changed since). If `pr_number` in `pr.md` is already set (e.g. resuming after an interruption, or after a Step 8 `changes_requested` cycle), skip straight to pushing the fix commit — `git push` alone updates the existing PR — and do not call `gh pr create` again:
 ```bash
-cd ../epic-<name>/
-git log --grep="^Issue #<N>:" -p --reverse > /tmp/issue-<N>-diff.patch
-if [ ! -s /tmp/issue-<N>-diff.patch ]; then
-  echo "❌ No commits matched '^Issue #<N>:' — check the commit message format (see Step 3) before continuing. Do not proceed to review with an empty diff."
+cd ../epic-<name>-<N>/
+pr_number=$(grep '^pr_number:' .claude/epics/<epic>/updates/<N>/pr.md | sed 's/^pr_number: *//')
+if [ -n "$pr_number" ]; then
+  git push
+  exit 0   # PR already exists and is now updated; nothing else in this step to do
 fi
+base=$(grep '^base:' .claude/epics/<epic>/updates/<N>/pr.md | sed 's/^base: *//')
+if [ "$base" != "main" ] && [ "$(gh issue view "$(echo "$base" | sed 's|.*/||')" --json state -q .state)" = "CLOSED" ]; then
+  # The dependency merged while this task was still in progress (a normal
+  # occurrence for a stack, not an error) — its branch is gone, so rebase
+  # onto main and open against main instead. Resolve any conflicts that
+  # come up; they're expected to be trivial, since this branch already
+  # contains equivalent changes to whatever the dependency's PR merged.
+  git fetch origin main
+  git rebase origin/main
+  base="main"
+  sed -i.bak "/^base:/c\\base: main" .claude/epics/<epic>/updates/<N>/pr.md
+  rm .claude/epics/<epic>/updates/<N>/pr.md.bak
+fi
+git push -u origin epic/<name>/<N>
+# Namespace by issue number — multiple tasks can reach this step around the
+# same time under "Starting a Full Epic", and a shared /tmp path would race.
+sed '1,/^---$/d' .claude/epics/<epic>/<N>.md > /tmp/pr-body-<N>.md
+{ echo "Closes #<N>"; echo; cat /tmp/pr-body-<N>.md; } > /tmp/pr-body-<N>.md.tmp
+mv /tmp/pr-body-<N>.md.tmp /tmp/pr-body-<N>.md
+pr_number=$(gh pr create --base "$base" --head epic/<name>/<N> --title "<task_name>" --body-file /tmp/pr-body-<N>.md --json number -q .number)
+sed -i.bak "/^pr_number:/c\\pr_number: $pr_number" .claude/epics/<epic>/updates/<N>/pr.md
+rm .claude/epics/<epic>/updates/<N>/pr.md.bak
 ```
-2. Launch a review subagent on a cheap model:
+If `gh pr create` fails because `$base` doesn't exist on the remote yet (the dependency has started but hasn't pushed), push it yourself first — `git push origin "$base"` — then retry; you have it locally since this task branched from it in Step 2.
+
+**Step 8 — Mandatory Review (before the PR can merge):**
+
+1. Launch a review subagent on a cheap model, targeting the PR directly (not a manually-collected diff — the `code-review` skill accepts a PR number and can post inline review comments). Read `pr_number` back from `pr.md` (`grep '^pr_number:' .claude/epics/<epic>/updates/<N>/pr.md`) if it isn't already in scope:
 ```yaml
 Task:
   description: "Code review — Issue #<N>"
   subagent_type: "general-purpose"
   model: haiku   # cheapest current Claude tier — use whatever the latest Haiku release is at run time; substitute the equivalent low-cost tier if not running on Claude
   prompt: |
-    Review the changes for Issue #<N> in ../epic-<name>/.
-    Diff to review: /tmp/issue-<N>-diff.patch (this issue's own commits only — do not substitute a commit-range diff, which may include other issues' concurrent work on the same branch)
-    Invoke the `code-review` skill against this diff at effort level "medium".
+    Invoke the `code-review` skill against PR #<pr_number> (the PR opened for Issue #<N> in ../epic-<name>-<N>/) at effort level "medium", with --comment so findings post as inline PR review comments.
     Report findings using the skill's normal findings format.
 ```
-3. Triage every finding immediately (do not defer to a later task) — the skill's "medium" effort level does not always attach a CONFIRMED/PLAUSIBLE verdict, so triage by substance, not by the presence of that label:
-   - Application code (per Step 3's TDD scope): any correctness bug, or any finding that would block a task that lists this issue in its `depends_on`, must be fixed now — write a failing regression test first (RED), fix it (GREEN), re-run tests.
-   - Non-application code (config/docs/infra/build-scripts/generated — TDD-exempt per Step 3): fix correctness bugs directly, no preceding test required; still fix immediately if it would block a dependent task.
+2. Triage every finding immediately (do not defer to a later task) — the skill's "medium" effort level does not always attach a CONFIRMED/PLAUSIBLE verdict, so triage by substance, not by the presence of that label:
+   - Application code (per Step 4's TDD scope): any correctness bug, or any finding that would block a task that lists this issue in its `depends_on`, must be fixed now — write a failing regression test first (RED), fix it (GREEN), re-run tests, then push the fix to the same branch (updates the open PR).
+   - Non-application code (config/docs/infra/build-scripts/generated — TDD-exempt per Step 4): fix correctness bugs directly, no preceding test required; still fix immediately if it would block a dependent task.
    - Only pure style/naming/simplification findings with no functional impact may be recorded and deferred without blocking.
-4. Record the outcome at `.claude/epics/<epic>/updates/<N>/review.md`:
+3. Record the outcome at `.claude/epics/<epic>/updates/<N>/review.md`:
 ```markdown
 ---
 issue: <N>
@@ -215,7 +264,7 @@ verdict: passed | changes_requested
 ## Findings Addressed
 ## Findings Deferred (non-blocking)
 ```
-5. Only proceed to "Closing an Issue" (sync.md) once verdict is `passed`.
+4. Only proceed to merging this task's PR (sync.md § Merging a Task PR) once verdict is `passed`.
 
 ---
 
@@ -226,39 +275,45 @@ verdict: passed | changes_requested
 ### Preflight
 - Verify `.claude/epics/<name>/epic.md` exists and has a `github:` field (i.e., it's been synced).
 - Check for uncommitted changes: `git status --porcelain` — block if dirty.
-- Verify epic branch exists: `git branch -a | grep "epic/<name>"`
 
 ### Process
 
 **Step 1 — Read all task files** in `.claude/epics/<name>/`. Parse frontmatter for `status`, `depends_on`, `parallel`.
 
 **Step 2 — Categorize tasks:**
-- Ready: status=open, no unmet depends_on
-- Blocked: has unmet depends_on
-- In Progress: already has an execution file
 - Complete: status=closed
+- In Progress: already has an execution file (already has a branch)
+- Blocked: status=open, with two or more unmet `depends_on` entries (a branch can only stack on one base), *or* exactly one unmet entry whose dependency hasn't itself started yet (no `updates/<dep_N>/execution.md` — no branch to stack on)
+- Ready: status=open, and either no unmet `depends_on` entries, or exactly one whose dependency is already In Progress (that dependency's branch becomes this task's stack base per execute.md § Starting an Issue, Step 2 — the dependency doesn't need to be closed yet, just already started)
 
-A `depends_on` entry is only "met" once the prerequisite task's `status` is `closed` — not merely `completed`. `status: closed` requires sync.md's "Closing an Issue" Preflight, which requires `review.md` verdict: passed (the "Mandatory Review" step under "Starting an Issue" above). This is deliberate: a dependent stream should never build on a prerequisite's implementation before it has passed mandatory review, since review may still change that implementation.
+This only ever stacks a new task on a dependency that already has a branch — never on one launched in the same batch — so there's no ordering to coordinate between agents: every Ready task's Step 2 can run fully independently and in parallel.
+
+A `depends_on` entry only counts as fully "met" once the prerequisite task's PR has actually merged, i.e. its `status` is `closed` — not merely `completed`. `status: closed` follows from merging its Stacked PR (sync.md § Merging a Task PR), which requires `review.md` verdict: passed (the "Mandatory Review" step under "Starting an Issue" above). A task with exactly one entry that isn't yet met is still Ready (it stacks on that one, per above) rather than Blocked, as long as that dependency has already started — but never build on more than one unmerged prerequisite at a time, since review may still change what an unmerged dependency's PR is building.
 
 **Step 3 — Analyze any ready tasks** that don't have an analysis file yet (run issue analysis inline).
 
-**Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above.
+**Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above. Each ready task creates and works in its own worktree/branch (Step 2 of "Starting an Issue") — tasks are never bundled into one shared epic worktree.
 
 **Step 5 — Create/update** `.claude/epics/<name>/execution-status.md` with all active agents and queued issues.
 
-**Step 6 — As issues close** (i.e., after the "Mandatory Review" step passes and sync.md closes them — not merely when a stream self-reports `status: completed`), check if blocked issues are now unblocked and launch those agents.
+**Step 6 — As tasks start or their PRs merge**, re-check Blocked tasks: one whose single unmet dependency just started (has an execution file now) or just merged becomes Ready and can be launched.
 
 ---
 
 ## Agent Coordination Rules
 
-When multiple agents work in the same worktree simultaneously:
+Two levels of coordination apply, since worktrees are now per-task rather than per-epic:
 
+**Across tasks** (different issues, different worktrees, possibly stacked branches):
+- Each task's agents work only inside that task's own worktree (`../epic-<name>-<N>/`) — never reach into another task's worktree.
+- A task stacked on another (per conventions.md's base-branch rule) inherits that dependency's commits by virtue of branching from it; it never needs to touch the dependency's worktree directly.
+- No `--force` flags ever, on any branch.
+
+**Within a task** (multiple streams sharing one worktree/branch simultaneously):
 - Each agent works only on files in its assigned stream scope.
 - Agents commit frequently with `Issue #<N>: <description>` format.
 - Before modifying a shared file, check `git status <file>` — if another agent has it modified, wait and pull first.
-- Agents sync via commits: `git pull --rebase origin epic/<name>` before starting new file work.
+- Agents sync via commits: `git pull --rebase origin epic/<name>/<N>` before starting new file work.
 - Conflicts are never auto-resolved — agents report them and pause.
-- No `--force` flags ever.
 
 Shared files that commonly need coordination (types, config, package.json) should be handled by one designated stream; others pull after that commit.

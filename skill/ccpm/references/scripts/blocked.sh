@@ -1,4 +1,7 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib-readiness.sh"
+
 echo "Getting tasks..."
 echo ""
 echo ""
@@ -15,6 +18,7 @@ for epic_dir in .claude/epics/*/; do
 
   for task_file in "$epic_dir"/[0-9]*.md; do
     [ -f "$task_file" ] || continue
+    task_num=$(basename "$task_file" .md)
 
     # Check if task is open
     status=$(grep "^status:" "$task_file" | head -1 | sed 's/^status: *//')
@@ -22,34 +26,25 @@ for epic_dir in .claude/epics/*/; do
       continue
     fi
 
-    # Check for dependencies
-    deps_line=$(grep "^depends_on:" "$task_file" | head -1)
-    if [ -n "$deps_line" ]; then
-      deps=$(echo "$deps_line" | sed 's/^depends_on: *//' | sed 's/^\[//' | sed 's/\]$//' | sed 's/,/ /g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-      [ -z "$deps" ] && deps=""
-    else
-      deps=""
-    fi
-
-    if [ -n "$deps" ] && [ "$deps" != "depends_on:" ]; then
+    # Blocked per lib-readiness.sh: two or more unmet dependencies, or
+    # chained onto a dependency that is itself Blocked (see execute.md §
+    # Starting a Full Epic — a task with at most one *resolvable* unmet
+    # dependency is Ready instead, since it stacks a Stacked PR on it).
+    if [ "$(task_readiness "$epic_dir" "$task_num")" = "blocked" ]; then
       task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//; s/^"//; s/"[[:space:]]*$//')
-      task_num=$(basename "$task_file" .md)
+      deps_line=$(grep "^depends_on:" "$task_file" | head -1)
+      deps=$(echo "$deps_line" | sed 's/^depends_on: *//' | sed 's/^\[//' | sed 's/\]$//' | sed 's/,/ /g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+      unmet=$(task_unmet_deps "$epic_dir" "$task_num")
+      unmet_count=$(echo "$unmet" | wc -w | tr -d ' ')
 
       echo "⏸️ Task #$task_num - $task_name"
       echo "   Epic: $epic_name"
-      echo "   Blocked by: [$deps]"
-
-      # Check status of dependencies
-      open_deps=""
-      for dep in $deps; do
-        dep_file="$epic_dir$dep.md"
-        if [ -f "$dep_file" ]; then
-          dep_status=$(grep "^status:" "$dep_file" | head -1 | sed 's/^status: *//')
-          [ "$dep_status" = "open" ] && open_deps="$open_deps #$dep"
-        fi
-      done
-
-      [ -n "$open_deps" ] && echo "   Waiting for:$open_deps"
+      if [ "$unmet_count" -ge 2 ]; then
+        echo "   Blocked by: [$deps] ($unmet_count still open — a branch can only stack on one)"
+      else
+        echo "   Blocked by: [$deps] (#$unmet hasn't started yet — nothing to stack on)"
+      fi
+      echo "   Waiting for: $unmet"
       echo ""
       ((found++))
     fi

@@ -1,6 +1,6 @@
 ---
 name: ccpm
-description: "CCPM - spec-driven project management: PRD → Epic → GitHub Issues → parallel agents → shipped code. Use this skill for anything in the software delivery lifecycle: writing a PRD ('write a PRD for X', 'let's plan X', 'scope this out'), parsing a PRD into an epic, decomposing an epic into tasks, syncing to GitHub ('sync the X epic', 'push tasks to github'), starting work on an issue ('start working on issue N', 'let's work on issue N'), analyzing parallel work streams, running standups ('standup', 'run the standup'), checking status ('what's next', 'what's blocked', 'what are we working on'), closing issues, or merging an epic. Use ccpm any time the user is talking about shipping a feature, managing work, or tracking progress — even if they don't say 'ccpm' or 'PRD'. Do NOT use for: debugging code, writing tests, reviewing PRs, or raw GitHub issue/PR operations with no delivery context."
+description: "CCPM - spec-driven project management: PRD → Epic → GitHub Issues → parallel agents → Stacked PRs → shipped code. Use this skill for anything in the software delivery lifecycle: writing a PRD ('write a PRD for X', 'let's plan X', 'scope this out'), parsing a PRD into an epic, decomposing an epic into tasks, syncing to GitHub ('sync the X epic', 'push tasks to github'), starting work on an issue ('start working on issue N', 'let's work on issue N'), analyzing parallel work streams, running standups ('standup', 'run the standup'), checking status ('what's next', 'what's blocked', 'what are we working on'), merging a task's PR, or completing an epic. Use ccpm any time the user is talking about shipping a feature, managing work, or tracking progress — even if they don't say 'ccpm' or 'PRD'. Do NOT use for: debugging code, writing tests, or raw GitHub issue/PR operations with no delivery context."
 ---
 
 # CCPM - Claude Code Project Manager
@@ -28,14 +28,14 @@ Before doing anything, read `references/conventions.md` for path standards, fron
 **Covers**: Epic decomposition into numbered task files with dependencies and parallelization.
 
 ### 3. Sync — Push to GitHub
-**When**: Local epic/tasks need to become GitHub issues, progress needs to be posted as comments, or a bug is found and needs a linked issue created.
+**When**: Local epic/tasks need to become GitHub issues, progress needs to be posted as comments, a task's Stacked PR is ready to merge, or a bug is found and needs a linked issue created.
 **Read**: `references/sync.md`
-**Covers**: Epic sync (epic + tasks → GitHub issues), issue sync (progress comments), closing issues/epics, bug reporting against completed issues.
+**Covers**: Epic sync (epic + tasks → GitHub issues), issue sync (progress comments), merging a task's PR, completing an epic once every task has merged, bug reporting against completed issues.
 
 ### 4. Execute — Start building
 **When**: User wants to start working on one or more GitHub issues with parallel agents.
 **Read**: `references/execute.md`
-**Covers**: Issue analysis (parallel work stream identification), launching parallel agents, coordinating worktrees.
+**Covers**: Issue analysis (parallel work stream identification), launching parallel agents, per-task worktrees and Stacked PRs, mandatory code review before merge.
 
 ### 5. Track — Know where things stand
 **When**: User asks for status, standup report, what's blocked, what's next, or needs to validate state.
@@ -77,6 +77,7 @@ Sync to GitHub:     "push the X epic to GitHub"
 Start an issue:     "start working on issue 42"
 Check status:       "what's our status" / "standup"
 What's next:        "what should I work on next"
-Merge epic:         "merge the X epic"
+Merge a task's PR:  "merge issue 42's PR"
+Complete an epic:   "wrap up the X epic" (once every task has merged)
 Report a bug:       "found a bug in issue 42" / "testing issue 42 revealed X"
 ```
