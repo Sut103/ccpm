@@ -80,6 +80,44 @@ completion: 0%
 
 ---
 
+## TDD & Test Traceability
+
+Development is test-driven by default. Acceptance criteria are refined step by step as work moves from PRD to epic to task, and every test case traces back to the requirement it proves.
+
+### ID Scheme
+
+| ID | Defined in | Section | Describes |
+|---|---|---|---|
+| `US-<n>` | PRD | `## User Stories` | A user story |
+| `AC-<n>` | PRD | `## Acceptance Criteria` | Observable behavior that proves a story is done (Given/When/Then, no implementation details) |
+| `TS-<n>` | Epic | `## Test Strategy` → `### Acceptance Test Matrix` | A test scenario that proves one AC at a chosen level (unit / integration / e2e) |
+| `TC-<n>` | Task | `## Test Cases` | A concrete test: precondition, input, expected output, test file location |
+
+IDs are numbered per file (`AC-1`, `AC-2`, ... in a PRD; `TC-1`, `TC-2`, ... in each task) and are not reused after deletion. Each TC names the TS it covers, each TS names its AC, and each AC names its US.
+
+### Red → Green → Refactor
+
+Implementation of a task follows this cycle:
+
+1. **Red** — write tests for the task's test cases before any production code. Run them and confirm they fail for the expected reason (a failed assertion or missing behavior). A failure caused by a syntax error, a bad import or a broken test setup is not Red; fix the test first.
+2. **Green** — write the minimal production code that makes the failing tests pass. Do not add behavior that no test asks for.
+3. **Refactor** — clean up code and tests while every test stays green.
+
+Commit at each step: `Issue #<N>: add failing tests for TC-1..TC-3`, `Issue #<N>: <specific change>`, `Issue #<N>: refactor <area>`. A task is not done until its test cases and the project's full test suite pass. Never weaken or delete a test to make it pass.
+
+### Writing Test Cases
+
+- Use Given / When / Then.
+- Use concrete values: `Given a cart with 2 items at $10, when a 10% coupon is applied, then the total is $18.00`, not `then the total is correct`.
+- One behavior per test case. Cover the failure paths and edge cases the AC implies (invalid input, empty state, limits), not only the happy path.
+- Fill `Test location` with the test file (and test name if known), following the project's existing test layout.
+
+### Exceptions
+
+TDD is the default, not an absolute. A task with no testable behavior (documentation only, configuration with nothing to assert, a time-boxed spike) writes `N/A — <reason>` in its `## Test Cases` section and marks the TDD items in its Definition of Done as N/A. Omitting the section, or writing N/A without a reason, is not allowed. If a spike leads to production code, that code goes into a follow-up task with its own test cases.
+
+---
+
 ## Datetime Rule
 
 Always get real current datetime from the system — never use placeholder text:
