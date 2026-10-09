@@ -34,7 +34,7 @@ REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 
 Strip frontmatter from epic.md, then:
 ```bash
-sed '1,/^---$/d; 1,/^---$/d' .claude/epics/<name>/epic.md > /tmp/epic-body.md
+awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {fm=0; next} !fm' .claude/epics/<name>/epic.md > /tmp/epic-body.md
 epic_number=$(gh issue create \
   --repo "$REPO" \
   --title "Epic: <name>" \
@@ -57,7 +57,7 @@ For ≥5 tasks: use parallel Task agents (3-4 tasks per batch).
 
 Per task:
 ```bash
-sed '1,/^---$/d; 1,/^---$/d' <task_file> > /tmp/task-body.md
+awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {fm=0; next} !fm' <task_file> > /tmp/task-body.md
 task_number=$(gh issue create \
   --repo "$REPO" \
   --title "<task_name>" \
@@ -74,7 +74,8 @@ After all issues are created, rename `001.md` → `<issue_number>.md` and update
 
 ```bash
 # Build old→new mapping, then for each task file:
-sed -i.bak "s/\b001\b/<new_num_1>/g" <file>  # repeat for each mapping
+# only depends_on/conflicts_with lines in frontmatter are rewritten
+sed -i.bak -E "/^(depends_on|conflicts_with):/ s/(^|[^0-9])001([^0-9]|$)/\1<new_num_1>\2/g" <file> && rm <file>.bak  # repeat for each mapping
 mv 001.md <new_num>.md
 ```
 
@@ -83,9 +84,16 @@ mv 001.md <new_num>.md
 current_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 # Update github: and updated: fields in epic.md and each task file
 github_url="https://github.com/$REPO/issues/<number>"
-sed -i.bak "/^github:/c\\github: $github_url" <file>
-sed -i.bak "/^updated:/c\\updated: $current_date" <file>
-rm <file>.bak
+# only lines inside the frontmatter are touched (see conventions.md)
+set_fm() {
+  awk -v k="$1" -v v="$2" '
+    NR==1 && /^---$/ {fm=1; print; next}
+    fm && /^---$/    {fm=0}
+    fm && index($0, k":")==1 {print k": "v; next}
+    {print}' "$3" > "$3.tmp" && mv "$3.tmp" "$3"
+}
+set_fm github "$github_url" <file>
+set_fm updated "$current_date" <file>
 ```
 
 **Step 5 — Create worktree for the epic:**
