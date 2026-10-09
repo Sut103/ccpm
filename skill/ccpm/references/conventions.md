@@ -91,16 +91,21 @@ date -u +"%Y-%m-%dT%H:%M:%SZ"
 
 ## Frontmatter Update Pattern
 
-When updating a single frontmatter field in an existing file:
+When updating a single frontmatter field in an existing file (only lines inside the frontmatter are touched):
 ```bash
-sed -i.bak "/^<field>:/c\\<field>: <value>" <file>
-rm <file>.bak
+awk -v k="<field>" -v v="<value>" '
+  NR==1 && /^---$/ {fm=1; print; next}
+  fm && /^---$/    {fm=0}
+  fm && index($0, k":")==1 {print k": "v; next}
+  {print}' <file> > <file>.tmp && mv <file>.tmp <file>
 ```
 
-When stripping frontmatter to get body content for GitHub:
+When stripping frontmatter to get body content for GitHub (body `---` lines are kept):
 ```bash
-sed '1,/^---$/d; 1,/^---$/d' <file> > /tmp/body.md
+awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {fm=0; next} !fm' <file> > /tmp/body.md
 ```
+
+Do not use `sed '1,/^---$/d; 1,/^---$/d'` or `sed "/^<field>:/c\\..."`: on GNU sed the former also deletes the body (up to the next `---`, or all of it), and the latter rewrites matching lines in the body too.
 
 ---
 
