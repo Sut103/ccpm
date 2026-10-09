@@ -143,7 +143,8 @@ Task:
        b. Green: write the minimal code that makes them pass.
           Commit: "Issue #<N>: <specific change>"
        c. Refactor: clean up while keeping all tests green. Commit if anything changed.
-       If your stream's Test Cases are "N/A — <reason>", skip a–c.
+       If your stream's Test Cases are "N/A — <reason>", skip the test steps (Red, Green,
+       Refactor): do the work described, then go to step 6.
     6. Run the project's full test suite (<test command from the epic's Test Strategy>).
        If your change broke a previously passing test, fix your change. Failing tests of
        another active stream or another open task are expected; leave them alone. If the

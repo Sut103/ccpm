@@ -83,7 +83,7 @@ conflicts_with: []
 - [ ] Test cases written first and confirmed failing for the expected reason (Red)
 - [ ] Minimal implementation makes all test cases pass (Green)
 - [ ] Code refactored with all tests still passing (Refactor)
-- [ ] Project's full test suite passing
+- [ ] Closing gate passes (`conventions.md` → Test Gates; applies to N/A tasks too)
 - [ ] Code reviewed
 ```
 

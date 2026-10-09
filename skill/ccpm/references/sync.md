@@ -207,7 +207,7 @@ gh issue edit <epic_N> --body-file /tmp/epic-body.md
 ```bash
 # From worktree: run the full test suite (command from the epic's Test Strategy)
 cd ../epic-<name>
-# e.g. npm test / pytest / cargo test / go test — stop here if the gate does not pass
+# e.g. npm test / pytest / cargo test / go test — stop here if the gate does not pass and the user has not approved proceeding
 
 # From main repo:
 git checkout main && git pull origin main
