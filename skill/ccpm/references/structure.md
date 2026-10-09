@@ -64,7 +64,7 @@ conflicts_with: []
 
 ## Acceptance Criteria
 - [ ] AC-<n>: <PRD criterion this task satisfies, fully or in part>
-<!-- or, for a task with no PRD criterion: AC: n/a (<reason>) -->
+<!-- or, for a task with no PRD criterion: AC: n/a (<reason>), with Covers n/a (<reason>) -->
 
 ## Test Cases
 | ID | Covers | Level | Given / When / Then | Test location |

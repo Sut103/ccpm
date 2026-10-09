@@ -178,6 +178,8 @@ Add sync marker to local files to prevent duplicate comments:
 3. Post completion comment:
 ```bash
 echo "✅ Task completed — all acceptance criteria met, all test cases passing." | gh issue comment <N> --body-file -
+# if the closing gate was passed by the user's approval instead, post:
+# "✅ Task closed with user approval — not passing: <failing or missing test cases>"
 gh issue close <N>
 ```
 4. Check off the task in the epic issue body:

@@ -28,7 +28,11 @@ Read the local task file fully. Identify independent work streams by asking:
 - API Layer: endpoints, validation, middleware
 - UI Layer: components, pages, styles
 
-There is no separate test stream: each stream owns the test cases for the behavior it builds and writes them first (see `conventions.md` → TDD & Test Traceability). Assign every `TC-<n>` in the task file to exactly one stream. A test case that needs the work of several streams goes to the stream that finishes last in the dependency chain; assigning it to an earlier stream deadlocks, because that stream cannot pass the test until later streams are done. List each stream's test files in its **Files**. Shared test fixtures and helpers follow the shared-file rule below: one designated stream owns them.
+There is no separate test stream: each stream owns the test cases for the behavior it builds and writes them first (see `conventions.md` → TDD & Test Traceability). Assign every `TC-<n>` in the task file to exactly one stream:
+- A test case that needs the work of several streams goes to the stream that finishes last in the dependency chain; assigning it to an earlier stream deadlocks, because that stream cannot pass the test until later streams are done.
+- Every stream that adds behavior owns at least one test case. If an earlier stream is left with none, add unit-level test cases for its part to the task's `## Test Cases` (a task-only change, see `conventions.md` → Changing Test Cases), or merge it into the stream that owns the test case. A stream that adds no observable behavior writes `N/A — <reason>` instead (see Exceptions).
+- Test cases that share a test file go to the same stream; otherwise split the file. List each stream's test files in its **Files**.
+- Shared test fixtures and helpers follow the shared-file rule below: one designated stream owns them.
 
 Create `.claude/epics/<epic_name>/<N>-analysis.md`:
 
@@ -130,21 +134,23 @@ Task:
     Instructions:
     1. Read full task from: .claude/epics/<epic>/<N>.md
     2. Read analysis from: .claude/epics/<epic>/<N>-analysis.md
-    3. Work ONLY in your assigned files
-    4. Work test-first (see conventions.md → TDD & Test Traceability):
-       a. Red: write tests for your test cases, named "#<N> TC-<n>: ...", run them, and
-          confirm they fail for the expected reason (add a minimal stub first if the test
-          cannot compile). Commit: "Issue #<N>: add failing tests for <TC IDs>"
+    3. Read TDD rules from: <skill_path>/references/conventions.md → TDD & Test Traceability
+    4. Work ONLY in your assigned files
+    5. Work test-first, following those rules:
+       a. Red: write tests for your test cases, tagged "[#<N> TC-<n>]", run them, and
+          confirm they fail for the expected reason (commit a minimal stub with them if the
+          test cannot compile). Commit: "Issue #<N>: add failing tests for <TC IDs>"
        b. Green: write the minimal code that makes them pass.
           Commit: "Issue #<N>: <specific change>"
        c. Refactor: clean up while keeping all tests green. Commit if anything changed.
-       If the task's Test Cases are "N/A — <reason>", skip a–c and note it in your progress file.
-    5. Run the project's full test suite (<test command from the epic's Test Strategy>).
+       If your stream's Test Cases are "N/A — <reason>", skip a–c.
+    6. Run the project's full test suite (<test command from the epic's Test Strategy>).
        If your change broke a previously passing test, fix your change. Failing tests of
-       another active stream or another open task are expected; leave them alone.
-    6. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
-    7. If you need to touch files outside your scope, note it in your progress file and wait
-    8. Never use --force on git operations
+       another active stream or another open task are expected; leave them alone. If the
+       suite cannot build because of someone else's change, wait and pull; don't fix it.
+    7. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
+    8. If you need to touch files outside your scope, note it in your progress file and wait
+    9. Never use --force on git operations
     
     Mark status: completed only when all your test cases pass and no previously passing test fails.
 ```
