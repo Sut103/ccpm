@@ -99,22 +99,55 @@ IDs are numbered per file (`AC-1`, `AC-2`, ... in a PRD; `TC-1`, `TC-2`, ... in 
 
 Implementation of a task follows this cycle:
 
-1. **Red** — write tests for the task's test cases before any production code. Run them and confirm they fail for the expected reason (a failed assertion or missing behavior). A failure caused by a syntax error, a bad import or a broken test setup is not Red; fix the test first.
+1. **Red** — write tests for the task's test cases before any production code. Run them and confirm they fail for the expected reason (a failed assertion or missing behavior). A failure caused by a syntax error, a bad import or a broken test setup is not Red; fix the test first. If the test cannot compile or import because the code under test does not exist yet, first add a minimal stub (signature only, body throws "not implemented"); the stub prepares Red and is not production code.
 2. **Green** — write the minimal production code that makes the failing tests pass. Do not add behavior that no test asks for.
 3. **Refactor** — clean up code and tests while every test stays green.
 
-Commit at each step: `Issue #<N>: add failing tests for TC-1..TC-3`, `Issue #<N>: <specific change>`, `Issue #<N>: refactor <area>`. A task is not done until its test cases and the project's full test suite pass. Never weaken or delete a test to make it pass.
+Commit at each step: `Issue #<N>: add failing tests for TC-1..TC-3`, `Issue #<N>: <specific change>`, `Issue #<N>: refactor <area>`. The Red commit is an intended exception to any "run tests before committing" rule; if a pre-commit hook rejects it, commit the failing tests together with the Green change instead of bypassing the hook. Never weaken or delete a test to make it pass.
 
 ### Writing Test Cases
 
 - Use Given / When / Then.
 - Use concrete values: `Given a cart with 2 items at $10, when a 10% coupon is applied, then the total is $18.00`, not `then the total is correct`.
 - One behavior per test case. Cover the failure paths and edge cases the AC implies (invalid input, empty state, limits), not only the happy path.
-- Fill `Test location` with the test file (and test name if known), following the project's existing test layout.
+- Fill `Test location` with the planned test file, following the project's existing test layout. It is a plan, not a record: do not update it after the test exists.
+- Escape `|` as `\|` inside table cells.
+
+### Tests Are the Record
+
+The `## Test Cases` table is the specification written before code exists. Once tests exist, the test code and the test run are the source of truth. Do not record per-test-case status (passing, failing, not written) in any file or issue comment; run the tests instead.
+
+To keep the link between a test case and its test in the code, put the issue number and TC ID in the test name (or its describe block or a comment next to it), e.g. `it("#1234 TC-2: rejects a duplicate email")`. `grep -rn "#1234 TC-2"` then finds the test.
+
+### Changing Test Cases
+
+Update a level above only when a change crosses that level's granularity:
+
+| Change | Update |
+|---|---|
+| Concrete values, split or added TC | Task `## Test Cases` only |
+| What a scenario proves, its test level, or which ACs have a scenario | Epic `### Acceptance Test Matrix` too |
+| What an acceptance criterion means | PRD `## Acceptance Criteria` too, then flow down |
+
+Which task covers a TS is recorded only in the task's `Covers` column.
+
+### Test Gates
+
+The closing gate (closing an issue) and the merging gate (merging an epic) both run the project's full test suite (command from the epic's `### Test Levels & Tooling`) in the epic worktree. The gate passes when:
+
+- every `TC-<n>` of the task (closing) or of every task (merging) has a test, found by its `#<N> TC-<n>` name, and that test passes; and
+- no other test fails, except tests listed as baseline failures in `### Test Levels & Tooling` and, when closing, tests belonging to other open tasks of the epic.
+
+For a task whose Test Cases are `N/A — <reason>`, only the second condition applies. If the gate does not pass, report what fails and why to the user; proceed only with their explicit approval.
 
 ### Exceptions
 
-TDD is the default, not an absolute. A task with no testable behavior (documentation only, configuration with nothing to assert, a time-boxed spike) writes `N/A — <reason>` in its `## Test Cases` section and marks the TDD items in its Definition of Done as N/A. Omitting the section, or writing N/A without a reason, is not allowed. If a spike leads to production code, that code goes into a follow-up task with its own test cases.
+TDD is the default, not an absolute.
+
+- **No testable behavior** (documentation only, configuration with nothing to assert, a time-boxed spike): write `N/A — <reason>` in `## Test Cases` and mark the TDD items in Definition of Done as N/A. Omitting the section, or writing N/A without a reason, is not allowed. If a spike leads to production code, that code goes into a follow-up task with its own test cases.
+- **Test already passes** (a characterization test for a refactor, or behavior an earlier task already delivered): Red is skipped for that test case. Note this in the stream's progress file.
+- **No PRD acceptance criterion** (setup, infrastructure, docs): write `AC: n/a (<reason>)` in the task's `## Acceptance Criteria`.
+- **Bug fix**: the regression test's `Covers` is `Regression #<original_N>` instead of a TS.
 
 ---
 

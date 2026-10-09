@@ -24,7 +24,7 @@ Read the epic fully. Analyze for parallelism — which pieces of work can happen
 - UI: components, pages, styling
 - Docs: README, API docs, changelogs
 
-Tests are not a separate task type: each task writes the tests for its own behavior first (see `conventions.md` → TDD & Test Traceability). Assign every test scenario (`TS-<n>`) in the epic's Acceptance Test Matrix to the task that implements that behavior. An e2e scenario that spans several tasks goes to the task that completes the flow (usually the last one in the dependency chain).
+Tests are not a separate task type: each task writes the tests for its own behavior first (see `conventions.md` → TDD & Test Traceability). Cover every test scenario (`TS-<n>`) in the epic's Acceptance Test Matrix in the task that implements that behavior. An e2e scenario that spans several tasks goes to the task that completes the flow (usually the last one in the dependency chain). If the epic plans a Setup task that introduces test tooling, every other task lists it in `depends_on`.
 
 **Parallelization strategy by epic size:**
 - Small (<5 tasks): create sequentially
@@ -64,6 +64,7 @@ conflicts_with: []
 
 ## Acceptance Criteria
 - [ ] AC-<n>: <PRD criterion this task satisfies, fully or in part>
+<!-- or, for a task with no PRD criterion: AC: n/a (<reason>) -->
 
 ## Test Cases
 | ID | Covers | Level | Given / When / Then | Test location |
@@ -89,8 +90,7 @@ conflicts_with: []
 **Test Cases** are the most concrete level of the test chain (PRD `AC` → epic `TS` → task `TC`). Write them now, before any code exists; the executing agent turns them into failing tests first. Follow `conventions.md` → Writing Test Cases. For a task with no testable behavior, replace the table with `N/A — <reason>` and mark the TDD items in Definition of Done as N/A (see `conventions.md` → Exceptions).
 
 **Quality gates before saving tasks:**
-- Every `TS-<n>` assigned to a task in the epic's Acceptance Test Matrix has at least one `TC-<n>` in that task.
-- Every `TS-<n>` in the matrix is assigned to some task; no scenario is left uncovered.
+- Every `TS-<n>` in the epic's Acceptance Test Matrix appears in the `Covers` column of at least one task's test case; no scenario is left uncovered.
 - Each test case has a concrete input and expected output; no wording like "works correctly".
 - `## Test Cases` is never empty: it holds test cases or `N/A — <reason>`.
 

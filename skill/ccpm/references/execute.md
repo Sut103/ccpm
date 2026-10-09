@@ -28,7 +28,7 @@ Read the local task file fully. Identify independent work streams by asking:
 - API Layer: endpoints, validation, middleware
 - UI Layer: components, pages, styles
 
-There is no separate test stream: each stream owns the test cases for the behavior it builds and writes them first (see `conventions.md` → TDD & Test Traceability). Assign every `TC-<n>` in the task file to exactly one stream. Shared test fixtures and helpers follow the shared-file rule below: one designated stream owns them.
+There is no separate test stream: each stream owns the test cases for the behavior it builds and writes them first (see `conventions.md` → TDD & Test Traceability). Assign every `TC-<n>` in the task file to exactly one stream. A test case that needs the work of several streams goes to the stream that finishes last in the dependency chain; assigning it to an earlier stream deadlocks, because that stream cannot pass the test until later streams are done. List each stream's test files in its **Files**. Shared test fixtures and helpers follow the shared-file rule below: one designated stream owns them.
 
 Create `.claude/epics/<epic_name>/<N>-analysis.md`:
 
@@ -109,8 +109,6 @@ started: <datetime>
 status: in_progress
 ---
 ## Scope
-## Test Cases
-- TC-1: ⏳ not written
 ## Progress
 - Starting implementation
 ```
@@ -134,16 +132,17 @@ Task:
     2. Read analysis from: .claude/epics/<epic>/<N>-analysis.md
     3. Work ONLY in your assigned files
     4. Work test-first (see conventions.md → TDD & Test Traceability):
-       a. Red: write tests for your test cases, run them, and confirm they fail
-          for the expected reason. Commit: "Issue #<N>: add failing tests for <TC IDs>"
+       a. Red: write tests for your test cases, named "#<N> TC-<n>: ...", run them, and
+          confirm they fail for the expected reason (add a minimal stub first if the test
+          cannot compile). Commit: "Issue #<N>: add failing tests for <TC IDs>"
        b. Green: write the minimal code that makes them pass.
           Commit: "Issue #<N>: <specific change>"
        c. Refactor: clean up while keeping all tests green. Commit if anything changed.
        If the task's Test Cases are "N/A — <reason>", skip a–c and note it in your progress file.
     5. Run the project's full test suite (<test command from the epic's Test Strategy>).
-       If your change broke a previously passing test, fix your change. Failing tests owned by another
-       active stream are expected — note them in your progress file, don't touch them.
-    6. Update progress, including each test case's status, in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
+       If your change broke a previously passing test, fix your change. Failing tests of
+       another active stream or another open task are expected; leave them alone.
+    6. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
     7. If you need to touch files outside your scope, note it in your progress file and wait
     8. Never use --force on git operations
     
@@ -223,7 +222,7 @@ When multiple agents work in the same worktree simultaneously:
 - Before modifying a shared file, check `git status <file>` — if another agent has it modified, wait and pull first.
 - Agents sync via commits: `git pull --rebase origin epic/<name>` before starting new file work.
 - Conflicts are never auto-resolved — agents report them and pause.
-- A stream is not complete until its own test cases pass and no previously passing test fails. Red tests from another active stream are expected while that stream is in progress — note them, don't fix them. Never weaken or delete a test to make it pass.
+- A stream is not complete until its own test cases pass and no previously passing test fails. Red tests from another active stream or open task are expected while that work is in progress; leave them alone. Never weaken or delete a test to make it pass.
 - No `--force` flags ever.
 
 Shared files that commonly need coordination (types, config, package.json) should be handled by one designated stream; others pull after that commit.

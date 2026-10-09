@@ -148,15 +148,12 @@ Comment format:
 ### 🔄 In Progress
 ### 📝 Technical Notes
 ### 📊 Acceptance Criteria Status
-### 🧪 Test Cases Status
 ### 🚀 Next Steps
 ### ⚠️ Blockers
 
 ---
 *Progress: N% | Synced at <timestamp>*
 ```
-
-Under Test Cases Status, list each `TC-<n>` from the task file as ✅ passing, 🔴 failing, or ⏳ not written yet.
 
 After posting: update `last_sync` in progress.md frontmatter, update `updated` in the task file.
 
@@ -172,8 +169,7 @@ Add sync marker to local files to prevent duplicate comments:
 **Trigger**: User marks a task complete.
 
 ### Preflight
-- In the epic worktree (`../epic-<name>/`), run the project's full test suite (command from the epic's `### Test Levels & Tooling`).
-- If any test fails, or any `TC-<n>` in the task file is not implemented and passing: "❌ Cannot close #<N>: <failing or missing test cases>. Fix them first." Skip the test case check for a task whose Test Cases are `N/A — <reason>`.
+- Run the closing gate from `conventions.md` → Test Gates in the epic worktree (`../epic-<name>/`). If it does not pass: "❌ Cannot close #<N>: <failing or missing test cases>." Proceed only with the user's explicit approval.
 
 ### Process
 
@@ -202,14 +198,14 @@ gh issue edit <epic_N> --body-file /tmp/epic-body.md
 - Verify worktree `../epic-<name>` exists.
 - Check for uncommitted changes in the worktree — block if dirty.
 - Warn if any task issues are still open.
-- Run the project's full test suite in the worktree — block the merge if any test fails.
+- Run the merging gate from `conventions.md` → Test Gates in the worktree. If it does not pass, block the merge unless the user explicitly approves.
 
 ### Process
 
 ```bash
 # From worktree: run the full test suite (command from the epic's Test Strategy)
 cd ../epic-<name>
-# e.g. npm test / pytest / cargo test / go test — stop here if anything fails
+# e.g. npm test / pytest / cargo test / go test — stop here if the gate does not pass
 
 # From main repo:
 git checkout main && git pull origin main
@@ -283,7 +279,7 @@ Found while working on / testing issue #<original_N>: <original title>
 ## Test Cases
 | ID | Covers | Level | Given / When / Then | Test location |
 |---|---|---|---|---|
-| TC-1 | Regression for #<original_N> | unit/integration/e2e | Given <state from Steps to Reproduce>, when <action>, then <expected behavior> | <path/to/test_file> |
+| TC-1 | Regression #<original_N> | unit/integration/e2e | Given <state from Steps to Reproduce>, when <action>, then <expected behavior> | <path/to/test_file> |
 
 ## Acceptance Criteria
 - [ ] Regression test TC-1 reproduces the bug and fails before the fix
