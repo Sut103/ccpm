@@ -22,8 +22,9 @@ Read the epic fully. Analyze for parallelism — which pieces of work can happen
 - Data: models, schemas, migrations
 - API: endpoints, services, integration
 - UI: components, pages, styling
-- Tests: unit, integration, e2e
 - Docs: README, API docs, changelogs
+
+Tests are not a separate task type: each task writes the tests for its own behavior first (see `conventions.md` → TDD & Test Traceability). Cover every test scenario (`TS-<n>`) in the epic's Acceptance Test Matrix in the task that implements that behavior. An e2e scenario that spans several tasks goes to the task that completes the flow (usually the last one in the dependency chain). If the epic plans a Setup task that introduces test tooling, every other task lists it in `depends_on`.
 
 **Parallelization strategy by epic size:**
 - Small (<5 tasks): create sequentially
@@ -37,9 +38,9 @@ Task:
   subagent_type: "general-purpose"
   prompt: |
     Create task files for epic: <name>
-    Tasks to create: [list 3-4 tasks]
+    Tasks to create: [list 3-4 tasks, with the TS IDs each covers]
     Save to: .claude/epics/<name>/001.md, 002.md, etc.
-    Follow the task file format exactly.
+    Follow the task file format exactly, including concrete Test Cases for every assigned TS.
     Return: list of files created.
 ```
 
@@ -62,7 +63,13 @@ conflicts_with: []
 ## Description
 
 ## Acceptance Criteria
-- [ ]
+- [ ] AC-<n>: <PRD criterion this task satisfies, fully or in part>
+<!-- or, for a task with no PRD criterion: AC: n/a (<reason>), with Covers n/a (<reason>) -->
+
+## Test Cases
+| ID | Covers | Level | Given / When / Then | Test location |
+|---|---|---|---|---|
+| TC-1 | TS-<n> (AC-<n>) | unit | Given <precondition>, when <input/action>, then <expected output> | <path/to/test_file> |
 
 ## Technical Details
 
@@ -73,10 +80,19 @@ conflicts_with: []
 - Hours: N
 
 ## Definition of Done
-- [ ] Code implemented
-- [ ] Tests written and passing
+- [ ] Test cases written first and confirmed failing for the expected reason (Red)
+- [ ] Minimal implementation makes all test cases pass (Green)
+- [ ] Code refactored with all tests still passing (Refactor)
+- [ ] Closing gate passes (`conventions.md` → Test Gates; applies to N/A tasks too)
 - [ ] Code reviewed
 ```
+
+**Test Cases** are the most concrete level of the test chain (PRD `AC` → epic `TS` → task `TC`). Write them now, before any code exists; the executing agent turns them into failing tests first. Follow `conventions.md` → Writing Test Cases. For a task with no testable behavior, replace the table with `N/A — <reason>` and mark the TDD items in Definition of Done as N/A (see `conventions.md` → Exceptions).
+
+**Quality gates before saving tasks:**
+- Every `TS-<n>` in the epic's Acceptance Test Matrix appears in the `Covers` column of at least one task's test case; no scenario is left uncovered.
+- Each test case has a concrete input and expected output; no wording like "works correctly".
+- `## Test Cases` is never empty: it holds test cases or `N/A — <reason>`.
 
 **Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitHub issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
 
@@ -92,6 +108,7 @@ Append a summary to the epic file:
 Total tasks: N
 Parallel tasks: N
 Sequential tasks: N
+Test cases: N (test scenarios covered: N/N)
 Estimated total effort: N hours
 ```
 

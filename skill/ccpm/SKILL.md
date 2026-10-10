@@ -11,6 +11,8 @@ A spec-driven development workflow: PRD → Epic → GitHub Issues → Parallel 
 
 Requirements live in files, not heads. Every feature starts as a PRD, becomes a technical epic, decomposes into GitHub issues, and gets executed by parallel agents with full traceability.
 
+Development is test-driven by default. Acceptance criteria are refined at each step — PRD acceptance criteria (`AC`) → epic test scenarios (`TS`) → task test cases (`TC`) — and agents write failing tests before the code that makes them pass. See `references/conventions.md` → TDD & Test Traceability.
+
 ## File Conventions
 
 Before doing anything, read `references/conventions.md` for path standards, frontmatter schemas, and GitHub operation rules. These apply to all phases.
@@ -20,12 +22,12 @@ Before doing anything, read `references/conventions.md` for path standards, fron
 ### 1. Plan — Capture requirements
 **When**: User wants to define a new feature, product requirement, or scope of work.
 **Read**: `references/plan.md`
-**Covers**: Writing PRDs through guided brainstorming, converting PRDs to technical epics.
+**Covers**: Writing PRDs (with acceptance criteria) through guided brainstorming, converting PRDs to technical epics (with a test strategy that maps each criterion to test scenarios).
 
 ### 2. Structure — Break it down
 **When**: An epic exists and needs to be decomposed into concrete tasks.
 **Read**: `references/structure.md`
-**Covers**: Epic decomposition into numbered task files with dependencies and parallelization.
+**Covers**: Epic decomposition into numbered task files with dependencies, parallelization, and concrete test cases.
 
 ### 3. Sync — Push to GitHub
 **When**: Local epic/tasks need to become GitHub issues, progress needs to be posted as comments, or a bug is found and needs a linked issue created.
@@ -35,7 +37,7 @@ Before doing anything, read `references/conventions.md` for path standards, fron
 ### 4. Execute — Start building
 **When**: User wants to start working on one or more GitHub issues with parallel agents.
 **Read**: `references/execute.md`
-**Covers**: Issue analysis (parallel work stream identification), launching parallel agents, coordinating worktrees.
+**Covers**: Issue analysis (parallel work stream identification), launching parallel agents that work test-first (Red → Green → Refactor), coordinating worktrees.
 
 ### 5. Track — Know where things stand
 **When**: User asks for status, standup report, what's blocked, what's next, or needs to validate state.

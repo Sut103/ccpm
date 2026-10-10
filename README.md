@@ -132,6 +132,8 @@ CCPM enforces a strict 5-phase discipline:
 4. **⚡ Execute** — build exactly what was specified
 5. **📊 Track** — maintain transparent progress at every step
 
+**Test-driven by default.** Acceptance criteria are refined at every step — PRD acceptance criteria → epic test scenarios → task test cases — and agents write a failing test before the code that makes it pass (Red → Green → Refactor).
+
 No shortcuts. No assumptions. No regrets.
 
 ---
@@ -148,9 +150,9 @@ Reality: a single "Implement user authentication" issue is actually:
 - **Agent 2**: Service layer and business logic
 - **Agent 3**: API endpoints and middleware
 - **Agent 4**: UI components and forms
-- **Agent 5**: Test suites and documentation
+- **Agent 5**: Documentation
 
-All running **simultaneously** in the same worktree.
+All running **simultaneously** in the same worktree, each writing the tests for its own stream first.
 
 ### The Math of Velocity
 
@@ -173,7 +175,7 @@ Each agent handles its own context in isolation. Your main conversation becomes 
 
 **🔗 GitHub native** — works with tools your team already uses. No dependency on the Projects API.
 
-**📊 Full traceability** — every decision documented. PRD → Epic → Task → Issue → Code → Commit.
+**📊 Full traceability** — every decision documented. PRD → Epic → Task → Issue → Code → Commit, and every test traces back to an acceptance criterion.
 
 **🤖 Deterministic ops run as scripts** — status, standup, search, validate all run as bash scripts: fast, consistent, no LLM token cost.
 
@@ -232,7 +234,7 @@ CCPM activates automatically when your agent detects PM intent. Just talk natura
 | "start working on issue N" | Analysis + parallel agents launched |
 | "standup" / "what's our status" | Bash script runs instantly |
 | "what's next" / "what's blocked" | Priority queue from project files |
-| "close issue N" | Local + GitHub updated |
+| "close issue N" | Tests verified, local + GitHub updated |
 | "merge the X epic" | Tests, merge, cleanup |
 
 ---
@@ -245,9 +247,9 @@ CCPM activates automatically when your agent detects PM intent. Just talk natura
 "I want to build a notification system — push, email, and in-app"
 ```
 
-CCPM conducts guided brainstorming before writing anything. It asks about the problem, users, success criteria, constraints, and what's out of scope — then creates a structured PRD at `.claude/prds/<name>.md`.
+CCPM conducts guided brainstorming before writing anything. It asks about the problem, users, success criteria, constraints, and what's out of scope — then creates a structured PRD at `.claude/prds/<name>.md`, with numbered user stories and Given/When/Then acceptance criteria.
 
-When ready: "parse the notification-system PRD" → produces a technical epic at `.claude/epics/notification-system/epic.md` with architecture decisions, technical approach, and task preview.
+When ready: "parse the notification-system PRD" → produces a technical epic at `.claude/epics/notification-system/epic.md` with architecture decisions, technical approach, a test strategy that maps every acceptance criterion to test scenarios, and task preview.
 
 ### 2. Structure — Break it down
 
@@ -255,7 +257,7 @@ When ready: "parse the notification-system PRD" → produces a technical epic at
 "break down the notification-system epic into tasks"
 ```
 
-Each task gets a file with acceptance criteria, effort estimate, `depends_on`, `parallel`, and `conflicts_with` metadata. Tasks are intelligently batched for parallel creation. ≤10 tasks per epic by default.
+Each task gets a file with acceptance criteria, concrete test cases (written before any code), effort estimate, `depends_on`, `parallel`, and `conflicts_with` metadata. Tasks are intelligently batched for parallel creation. ≤10 tasks per epic by default.
 
 ### 3. Sync — Push to GitHub
 
@@ -271,7 +273,7 @@ Creates an epic issue, creates sub-issues for each task, renames local files to 
 "start working on issue 42"
 ```
 
-Analyzes the issue for independent work streams, launches parallel agents scoped to their own files, and sets up progress tracking. Each agent commits with `Issue #N: description` and coordinates through Git.
+Analyzes the issue for independent work streams, launches parallel agents scoped to their own files, and sets up progress tracking. Each agent works test-first — failing tests, minimal code to pass, refactor — commits with `Issue #N: description`, and coordinates through Git.
 
 ### 5. Track — Know where things stand
 

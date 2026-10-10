@@ -168,13 +168,18 @@ Add sync marker to local files to prevent duplicate comments:
 
 **Trigger**: User marks a task complete.
 
+### Preflight
+- Run the closing gate from `conventions.md` → Test Gates in the epic worktree (`../epic-<name>/`). If it does not pass: "❌ Cannot close #<N>: <failing or missing test cases>." Proceed only with the user's explicit approval.
+
 ### Process
 
 1. Find the local task file (`.claude/epics/*/<N>.md`).
 2. Update frontmatter: `status: closed`, `updated: <now>`.
 3. Post completion comment:
 ```bash
-echo "✅ Task completed — all acceptance criteria met." | gh issue comment <N> --body-file -
+echo "✅ Task completed — all acceptance criteria met, all test cases passing." | gh issue comment <N> --body-file -
+# if the closing gate was passed by the user's approval instead, post:
+# "✅ Task closed with user approval — not passing: <failing or missing test cases>"
 gh issue close <N>
 ```
 4. Check off the task in the epic issue body:
@@ -195,13 +200,14 @@ gh issue edit <epic_N> --body-file /tmp/epic-body.md
 - Verify worktree `../epic-<name>` exists.
 - Check for uncommitted changes in the worktree — block if dirty.
 - Warn if any task issues are still open.
+- Run the merging gate from `conventions.md` → Test Gates in the worktree. If it does not pass, block the merge unless the user explicitly approves.
 
 ### Process
 
 ```bash
-# From worktree: run project tests if detectable
+# From worktree: run the full test suite (command from the epic's Test Strategy)
 cd ../epic-<name>
-# detect and run: npm test / pytest / cargo test / go test / etc.
+# e.g. npm test / pytest / cargo test / go test — stop here if the gate does not pass and the user has not approved proceeding
 
 # From main repo:
 git checkout main && git pull origin main
@@ -242,6 +248,8 @@ Also read the local task file if it exists: `.claude/epics/*/<original_N>.md`
 
 **Step 2 — Create a local bug task file:**
 
+The fix is test-first: TC-1 is a regression test that reproduces the bug. It is written and confirmed failing before any fix (Red), then the fix makes it pass (Green).
+
 ```markdown
 ---
 name: Bug: <short description>
@@ -270,9 +278,15 @@ Found while working on / testing issue #<original_N>: <original title>
 - Expected: 
 - Actual: 
 
+## Test Cases
+| ID | Covers | Level | Given / When / Then | Test location |
+|---|---|---|---|---|
+| TC-1 | Regression #<original_N> | unit/integration/e2e | Given <state from Steps to Reproduce>, when <action>, then <expected behavior> | <path/to/test_file> |
+
 ## Acceptance Criteria
-- [ ] Bug is fixed
-- [ ] Original issue #<original_N> behaviour is unaffected
+- [ ] Regression test TC-1 reproduces the bug and fails before the fix
+- [ ] Bug is fixed — TC-1 passes
+- [ ] Original issue #<original_N> behaviour is unaffected — its test cases still pass
 
 ## Effort Estimate
 - Size: XS/S
