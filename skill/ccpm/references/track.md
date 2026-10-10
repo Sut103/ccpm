@@ -153,6 +153,18 @@ Checks: frontmatter consistency, orphaned files, missing GitHub links, dependenc
 
 ---
 
+## Stack Layer Order
+
+**Trigger**: "show the stack for <name>", "what's the layer order"
+
+```bash
+bash references/scripts/stack-plan.sh <name>
+```
+
+Stack-delivery epics only. Shows each task's layer, branch and PR base. `--write` stores the positions; `--check` verifies them.
+
+---
+
 ## When Scripts Fail
 
 If a script fails or the output needs interpretation (e.g., an error in the output, or the user asks "what does this mean"), then step in to explain. But always run the script first — don't guess at what status/standup output would look like.

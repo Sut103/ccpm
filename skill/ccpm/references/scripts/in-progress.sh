@@ -45,6 +45,20 @@ if [ -d ".claude/epics" ]; then
   done
 fi
 
+# Tasks whose PR is open (stack delivery)
+review_found=0
+for task_file in .claude/epics/*/[0-9]*.md; do
+  [ -f "$task_file" ] || continue
+  grep -q "^status: *in-review" "$task_file" || continue
+  [ $review_found -eq 0 ] && echo "🔍 In Review:"
+  task_num=$(basename "$task_file" .md)
+  task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
+  pr=$(grep "^pr:" "$task_file" | head -1 | sed 's/^pr: *//')
+  echo "   • #$task_num - $task_name${pr:+ ($pr)}"
+  ((review_found++))
+done
+[ $review_found -gt 0 ] && echo ""
+
 # Also check for in-progress epics
 echo "📚 Active Epics:"
 for epic_dir in .claude/epics/*/; do

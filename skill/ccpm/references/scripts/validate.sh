@@ -78,6 +78,46 @@ done
 
 [ $invalid -eq 0 ] && echo "  ✅ All files have frontmatter"
 
+# Check delivery mode, task status values and stack positions
+echo ""
+echo "📦 Delivery & Status:"
+delivery_issues=0
+
+for epic_dir in .claude/epics/*/; do
+  [ -f "$epic_dir/epic.md" ] || continue
+  epic_name=$(basename "$epic_dir")
+  delivery=$(awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {exit} fm && /^delivery:/ {sub(/^delivery: */, ""); print; exit}' "$epic_dir/epic.md")
+
+  case "${delivery:-merge}" in
+    merge|stack) ;;
+    *) echo "  ⚠️ Epic $epic_name has an invalid delivery: $delivery (expected merge or stack)"; ((warnings++)); ((delivery_issues++)) ;;
+  esac
+
+  for task_file in "$epic_dir"[0-9]*.md; do
+    [ -f "$task_file" ] || continue
+    case "$(basename "$task_file" .md)" in *[!0-9]*) continue ;; esac
+    task_status=$(awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {exit} fm && /^status:/ {sub(/^status: */, ""); print; exit}' "$task_file")
+    case "$task_status" in
+      open|in-progress|closed) ;;
+      in-review)
+        if [ "$delivery" != "stack" ]; then
+          echo "  ⚠️ Task $(basename "$task_file" .md) is in-review, but epic $epic_name does not use stack delivery"
+          ((warnings++)); ((delivery_issues++))
+        fi ;;
+      *) echo "  ⚠️ Task $(basename "$task_file" .md) has an invalid status: ${task_status:-unset}"; ((warnings++)); ((delivery_issues++)) ;;
+    esac
+  done
+
+  if [ "$delivery" = "stack" ] && ls "$epic_dir"[0-9]*.md >/dev/null 2>&1; then
+    if ! bash "$(dirname "$0")/stack-plan.sh" "$epic_name" --check >/dev/null 2>&1; then
+      echo "  ⚠️ Stack positions in $epic_name do not match the plan. Run: stack-plan.sh $epic_name"
+      ((warnings++)); ((delivery_issues++))
+    fi
+  fi
+done
+
+[ $delivery_issues -eq 0 ] && echo "  ✅ Delivery modes, statuses and stack positions valid"
+
 # Summary
 echo ""
 echo "📊 Validation Summary:"

@@ -31,8 +31,10 @@ echo "📝 Tasks:"
 if [ -d ".claude/epics" ]; then
   total=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | wc -l)
   open=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *open" 2>/dev/null | wc -l)
+  in_review=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *in-review" 2>/dev/null | wc -l)
   closed=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *closed" 2>/dev/null | wc -l)
   echo "  Open: $open"
+  echo "  In review: $in_review"
   echo "  Closed: $closed"
   echo "  Total: $total"
 else

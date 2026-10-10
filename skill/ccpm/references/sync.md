@@ -102,6 +102,11 @@ git checkout main && git pull origin main
 git worktree add ../epic-<name> -b epic/<name>
 ```
 
+With stack delivery, there is no `epic/<name>` branch. Confirm the layer order still holds after the renames (`bash references/scripts/stack-plan.sh <name> --check`), then create the worktree on the bottom layer's branch:
+```bash
+git worktree add ../epic-<name> -b epic/<name>/<bottom_N> main
+```
+
 **Step 6 — Create github-mapping.md:**
 ```markdown
 # GitHub Issue Mapping
@@ -164,9 +169,67 @@ Add sync marker to local files to prevent duplicate comments:
 
 ---
 
+## Submitting a Task (stack delivery)
+
+**Trigger**: A task of a `delivery: stack` epic is finished — e.g. "submit issue N", "open the PR for issue N", or all of its streams have completed.
+
+Stack delivery replaces "Closing an Issue": CCPM submits the layer, and the issue closes when its PR merges.
+
+### Preflight
+- The task is the next layer to submit: the task directly below it (by `position`) is `in-review` or `closed`.
+- Run the layer gate from `conventions.md` → Test Gates on the task's branch `epic/<name>/<N>` in `../epic-<name>/`. If it does not pass: "❌ Cannot submit #<N>: <failing or missing test cases>." Proceed only with the user's explicit approval.
+- No uncommitted changes in the worktree.
+
+### Process
+
+1. Push the layer branch: `git push -u origin epic/<name>/<N>`
+2. Write the PR body to `/tmp/pr-body.md`:
+```markdown
+Closes #<N>
+
+## Stack
+Layer <position> of <total> in epic #<epic_N>
+- Below: #<PR of the layer below> (or: none, based on main)
+- Above: #<N of the next task> (not submitted yet)
+
+## Acceptance Criteria
+<AC lines from the task file>
+
+## Test Cases
+<TC IDs and the TS/AC each covers, or N/A — <reason>>
+
+## Tests
+`<test command>` — <passed / passed except baseline failures: ...>
+
+Suggested merge method: squash (keeps the Red commits out of main's history)
+```
+3. Create the PR (see `conventions.md` → Pull Request Operations), base = the layer below's branch, or `main` for the bottom layer:
+```bash
+pr_url=$(gh pr create --repo "$REPO" --base <base_branch> --head epic/<name>/<N> \
+  --title "<task_name>" --body-file /tmp/pr-body.md)
+```
+4. From the second layer on, link the stack when possible: re-run `gh stack link` with every submitted layer's branch, bottom to top, or use the stacks REST endpoint (create the stack from the first two PRs, then `POST repos/<owner>/<repo>/stacks/<stack_number>/add` for each later PR). If neither is available, leave the PRs unlinked.
+5. In the task file set `status: in-review`, `pr: <pr_url>`, `updated: <now>`.
+6. Add the PR to the epic issue's task line:
+```bash
+gh issue view <epic_N> --json body -q .body > /tmp/epic-body.md
+sed -i "s|^- \[ \] #<N>\(.*\)$|- [ ] #<N>\1 (PR <pr_url>)|" /tmp/epic-body.md
+gh issue edit <epic_N> --body-file /tmp/epic-body.md
+```
+
+**Output:**
+```
+✅ Submitted #<N> as layer <position>/<total>: <pr_url>
+  Next layer: #<next_N> — "start working on issue <next_N>"
+```
+
+If a submitted layer needs another change, follow `conventions.md` → Changing a Lower Layer.
+
+---
+
 ## Closing an Issue
 
-**Trigger**: User marks a task complete.
+**Trigger**: User marks a task complete. Merge delivery only; with stack delivery, see Submitting a Task.
 
 ### Preflight
 - Run the closing gate from `conventions.md` → Test Gates in the epic worktree (`../epic-<name>/`). If it does not pass: "❌ Cannot close #<N>: <failing or missing test cases>." Proceed only with the user's explicit approval.
@@ -195,6 +258,24 @@ gh issue edit <epic_N> --body-file /tmp/epic-body.md
 ## Merging an Epic
 
 **Trigger**: User wants to merge a completed epic back to main.
+
+With stack delivery, CCPM does not merge: the epic is done when every task's PR has merged. Instead of the process below:
+1. Read each task issue's state and each task PR's state (see `conventions.md` → Pull Request Operations). If any issue is open or any PR is not merged, list them and stop.
+2. Set every task to `status: closed`, check them off in the epic issue body, and set the epic's `progress: 100%`.
+3. Clean up and archive:
+```bash
+git worktree remove ../epic-<name>
+for b in $(git branch --list "epic/<name>/*" --format='%(refname:short)'); do
+  git branch -D "$b"                          # PR merged (step 1); a squash merge leaves the branch unmerged to git
+  git push origin --delete "$b" 2>/dev/null   # GitHub may already have deleted it
+done
+mkdir -p .claude/epics/archived/
+mv .claude/epics/<name> .claude/epics/archived/
+gh issue close <epic_N> -c "Epic completed: all task PRs merged"
+```
+4. Update epic.md frontmatter: `status: completed`.
+
+With merge delivery:
 
 ### Preflight
 - Verify worktree `../epic-<name>` exists.
@@ -307,6 +388,8 @@ gh issue create \
 The issue body should open with `Fixes / follow-up to #<original_N>` so GitHub auto-links them.
 
 **Step 4 — Update the local file** with the GitHub issue number and rename to `<new_N>.md`.
+
+With stack delivery, the bug task becomes the new top layer: run `bash references/scripts/stack-plan.sh <epic_name> --write`.
 
 **Output:**
 ```

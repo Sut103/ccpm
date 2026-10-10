@@ -235,7 +235,8 @@ CCPM activates automatically when your agent detects PM intent. Just talk natura
 | "standup" / "what's our status" | Bash script runs instantly |
 | "what's next" / "what's blocked" | Priority queue from project files |
 | "close issue N" | Tests verified, local + GitHub updated |
-| "merge the X epic" | Tests, merge, cleanup |
+| "submit issue N" | Layer gate, PR opened on top of the stack (stack delivery) |
+| "merge the X epic" | Tests, merge, cleanup (stack delivery: confirm all PRs merged, cleanup) |
 
 ---
 
@@ -283,6 +284,13 @@ Analyzes the issue for independent work streams, launches parallel agents scoped
 
 All tracking operations run as bash scripts — instant output, no LLM overhead. The scripts scan `.claude/epics/` and report what's in progress, what's next, and what's blocked.
 
+### Delivery — merge or stacked PRs
+
+Each epic chooses how its work reaches main:
+
+- **merge** (default): all tasks share the epic branch, which is merged into main at the end.
+- **stack**: every task becomes one pull request, and the epic's tasks form a single linear stack (`epic/<name>/<N>`, each based on the layer below). A task is submitted when its layer gate passes, the next layer starts on top of it, and each issue closes when its PR merges (`Closes #N`). Tasks run one after another; streams inside a task still run in parallel. Works with `gh` or the GitHub MCP server, and links the PRs into a GitHub stack when `gh stack` or the stacks API is available.
+
 ---
 
 ## Skill Structure
@@ -302,7 +310,8 @@ skill/ccpm/
         ├── standup.sh
         ├── epic-list.sh
         ├── search.sh
-        └── ...               # 14 scripts total
+        ├── stack-plan.sh     # layer order for stack delivery
+        └── ...               # 15 scripts total
 ```
 
 Your project files live in `.claude/` in your project root:
