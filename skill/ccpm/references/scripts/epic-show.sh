@@ -81,7 +81,7 @@ echo ""
 echo "📈 統計:"
 echo "  Task 総数: $task_count"
 echo "  未完了: $open_count"
-echo "  完了: $closed_count"
+echo "  クローズ済み: $closed_count"
 [ $task_count -gt 0 ] && echo "  完了率: $((closed_count * 100 / task_count))%"
 
 # 次の操作

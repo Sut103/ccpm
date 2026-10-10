@@ -108,7 +108,7 @@ Task の実装は次の周期に従う。
 
 各段階でコミット: `Issue #<N>: add failing tests for TC-1..TC-3`、`Issue #<N>: <specific change>`、`Issue #<N>: refactor <area>`。Red のコミットは「コミット前に Test を実行」系規則の意図的な例外。pre-commit hook が拒否する場合、hook を回避せず、失敗 Test を Green の変更と同一コミットとする。Test を通過させる目的での Test の弱化・削除は厳禁。
 
-### Test Case の記述
+### Writing Test Cases
 
 - Given / When / Then を使用。
 - 具体値を使用: `then the total is correct` ではなく `Given a cart with 2 items at $10, when a 10% coupon is applied, then the total is $18.00`。
@@ -116,13 +116,13 @@ Task の実装は次の周期に従う。
 - `Test location` には、プロジェクト既存の Test 配置に従い予定の Test ファイルを記入。これは計画であって記録ではなく、Test 作成後の更新は不要。
 - 表のセル内の `|` は `\|` へエスケープ。
 
-### Test を正本とする
+### Tests Are the Record
 
 `## Test Cases` の表は、コード作成前に記述する仕様。Test 作成後は、Test コードと Test 実行結果が正本。Test Case 単位の状態 (通過、失敗、未作成) をファイルや Issue コメントへ記録することは禁止。状態確認は Test 実行による。
 
 Test Case とコード上の Test との対応を維持するため、Test 名に `[#<N> TC-<n>]` タグを付与。例: `it("[#1234 TC-2] rejects a duplicate email")`。Test 名にタグを含められない場合 (Go や pytest の関数名等)、Test の直上行のコメントに記載。角括弧により `TC-1` と `TC-10` の誤照合を防止し、`grep -rnF "[#1234 TC-2]"` で該当 Test を検索可能。
 
-### Test Case の変更
+### Changing Test Cases
 
 上位階層の更新は、変更がその階層の粒度に及ぶ場合に限る。
 
@@ -143,7 +143,7 @@ Closing Gate (Issue のクローズ) と Merging Gate (Epic のマージ) は、
 
 Test Cases が `N/A — <reason>` の Task は、第二条件のみ適用。Gate 不通過の場合、失敗内容と原因をユーザーへ報告し、明示的な承認を得た場合に限り続行。
 
-stack delivery では、**Layer Gate** が Closing Gate を代替し、Merging Gate は存在しない。Task の Submit 前に、Epic Worktree 上の当該 Task の Layer ブランチで実行。通過条件は、Task の全 `TC-<n>` に通過する Test が存在すること (前述と同様) と、既知の失敗以外に失敗 Test がないこと。他の未完了 Task の Test も除外対象外。上位 Layer の Task は当該ブランチに未包含であり、下位 Layer の Task は全て包含済みのため。
+stack delivery では、**Layer Gate** が Closing Gate を代替し、Merging Gate は存在しない。Task の Submit 前に、Epic Worktree 上の当該 Task の Layer ブランチで実行。通過条件は、Task の全 `TC-<n>` に通過する Test が存在すること (前述と同様) と、既知の失敗以外に失敗 Test がないこと。他の未完了 Task の Test も除外しない。上位 Layer の Task は当該ブランチに含まれず、下位 Layer の Task は全て当該ブランチに含まれるため。
 
 ### 例外
 
@@ -204,7 +204,7 @@ REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 gh <command> || echo "❌ GitHub CLI 失敗。実行: gh auth login"
 ```
 
-### Issue 番号の取得
+### Getting Issue Numbers
 ```bash
 # Task ファイルの github フィールドから取得:
 grep 'github:' <file> | grep -oE '[0-9]+$'
@@ -257,7 +257,7 @@ Submit 済み Layer に変更が必要な場合 (上位 Layer の構築中に発
 
 ---
 
-## Git / Worktree 規約
+## Git / Worktree Conventions
 
 - Epic ごとに一本のブランチ: `epic/<name>` (stack delivery では Layer ごとに一本。Delivery Modes 参照)
 - Worktree の配置先は `../epic-<name>/` (プロジェクトルートと同階層)

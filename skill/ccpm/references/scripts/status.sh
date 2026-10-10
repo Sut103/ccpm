@@ -33,9 +33,9 @@ if [ -d ".claude/epics" ]; then
   open=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *open" 2>/dev/null | wc -l)
   in_review=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *in-review" 2>/dev/null | wc -l)
   closed=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *closed" 2>/dev/null | wc -l)
-  echo "  未完了: $open"
+  echo "  未着手: $open"
   echo "  レビュー中: $in_review"
-  echo "  完了: $closed"
+  echo "  クローズ済み: $closed"
   echo "  総数: $total"
 else
   echo "  Task 不在"

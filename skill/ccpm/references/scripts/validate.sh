@@ -104,7 +104,7 @@ for epic_dir in .claude/epics/*/; do
           echo "  ⚠️ Task $(basename "$task_file" .md) が in-review だが、Epic $epic_name は stack delivery 非対象"
           ((warnings++)); ((delivery_issues++))
         fi ;;
-      *) echo "  ⚠️ Task $(basename "$task_file" .md) の status が不正: ${task_status:-unset}"; ((warnings++)); ((delivery_issues++)) ;;
+      *) echo "  ⚠️ Task $(basename "$task_file" .md) の status が不正: ${task_status:-未設定}"; ((warnings++)); ((delivery_issues++)) ;;
     esac
   done
 

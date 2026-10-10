@@ -1,4 +1,4 @@
-# Sync — GitHub への反映と進捗管理
+# Sync — Push to GitHub & Track Progress
 
 本 Phase では、ローカルの Epic・Task の GitHub Issue としての反映、進捗のコメントとしての Sync、作業完了時の Issue のクローズを扱う。
 
@@ -20,7 +20,7 @@ REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 
 ---
 
-## Epic Sync — Epic と Task の GitHub への反映
+## Epic Sync — Push Epic + Tasks to GitHub
 
 **起動条件**: ローカルの Epic とその Task の GitHub Issue としての反映をユーザーが要望。
 
@@ -127,7 +127,7 @@ Synced: <datetime>
 
 ---
 
-## Issue Sync — 進捗の GitHub への投稿
+## Issue Sync — Post Progress to GitHub
 
 **起動条件**: ローカルの開発進捗の GitHub Issue へのコメントとしての Sync をユーザーが要望。
 
@@ -317,7 +317,7 @@ epic.md の Frontmatter を更新: `status: completed`。
 
 **起動条件**: 完了済みまたは進行中の Issue の検証中にユーザーがバグを発見。例: 「Issue 42 でバグを発見」「Issue 42 の検証中にメール検証の不具合が判明」。
 
-手順は自動化を維持: 元 Issue の文脈を失わずに、関連付けたバグ Task を作成。
+手順は自動で完結させる。元 Issue の文脈を保持したまま、関連付けたバグ Task を作成。
 
 ### Process
 

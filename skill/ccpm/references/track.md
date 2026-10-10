@@ -35,7 +35,7 @@ bash references/scripts/status.sh
 
 ## Standup Report
 
-**起動語**: 「スタンドアップ」「日次スタンドアップ」「昨日の作業」「朝の報告」 / "standup", "daily standup", "what did we do", "morning update"
+**起動語**: 「Standup」「日次 Standup」「昨日の作業」「朝の報告」 / "standup", "daily standup", "what did we do", "morning update"
 
 ```bash
 bash references/scripts/standup.sh
@@ -105,7 +105,7 @@ bash references/scripts/prd-status.sh
 bash references/scripts/search.sh "<query>"
 ```
 
-ローカルの Task ファイル、PRD、Epic を対象に検索語を検索。
+ローカルの Task ファイル、PRD、Epic を対象に検索語との一致を探索。
 
 ---
 

@@ -131,7 +131,7 @@ Criterion を証明可能な最低水準を選択。e2e は全層にわたるフ
 - `merge` (既定): 全 Task 完了時に Epic ブランチを main へマージ。
 - `stack`: 各 Task を個別の Pull Request として Submit し、全体で単一の直線的 stack を構成。Task は逐次実行 (Task 内の Stream は引き続き並列実行)。GitHub リポジトリと、`gh` または GitHub MCP サーバーが必要。
 
-`## Task Breakdown Preview` には、各 Task が担う予定の `TS-<n>` ID を列挙。分解用の計画であり、以後の保守は不要。Task 作成後は、各 Task の `## Test Cases` の `Covers` 列が記録。
+`## Task Breakdown Preview` には、各 Task が担う予定の `TS-<n>` ID を列挙。分解用の計画であり、以後の保守は不要。Task 作成後は、各 Task の `## Test Cases` の `Covers` 列が記録の正本。
 
 **主要制約:**
 - Task 総数は 10 以下を目標。網羅性より簡潔性を優先。

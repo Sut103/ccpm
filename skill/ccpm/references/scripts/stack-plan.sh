@@ -151,7 +151,7 @@ for t in $order; do
 
   case "$mode" in
     --write) [ "$current" != "$pos" ] && fm_set position "$pos" "$f" ;;
-    --check) [ "$current" != "$pos" ] && { echo "     ⚠️ position は '${current:-unset}'、期待値は $pos"; status=1; } ;;
+    --check) [ "$current" != "$pos" ] && { echo "     ⚠️ position は '${current:-未設定}'、期待値は $pos"; status=1; } ;;
   esac
   prev="$num"
 done

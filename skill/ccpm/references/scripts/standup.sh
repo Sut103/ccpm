@@ -110,6 +110,6 @@ total_tasks=$(find .claude/epics -name "[0-9]*.md" 2>/dev/null | wc -l)
 open_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *open" {} \; 2>/dev/null | wc -l)
 review_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *in-review" {} \; 2>/dev/null | wc -l)
 closed_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *closed" {} \; 2>/dev/null | wc -l)
-echo "  Task: 未完了 $open_tasks、レビュー中 $review_tasks、完了 $closed_tasks、総数 $total_tasks"
+echo "  Task: 未着手 $open_tasks、レビュー中 $review_tasks、クローズ済み $closed_tasks、総数 $total_tasks"
 
 exit 0

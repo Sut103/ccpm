@@ -120,7 +120,7 @@ else
   echo ""
   echo "📊 内訳:"
   echo "  Task 総数: $total"
-  echo "  ✅ 完了: $closed"
+  echo "  ✅ クローズ済み: $closed"
   echo "  🔍 レビュー中: $in_review"
   echo "  🛠️ 進行中: $in_progress"
   echo "  🔄 着手可能: $open"

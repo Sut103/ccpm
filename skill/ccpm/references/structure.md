@@ -1,4 +1,4 @@
-# Structure — Epic の分解
+# Structure — Break Down an Epic
 
 本 Phase では、技術 Epic を、依存関係と並列化の情報を備えた具体的な連番 Task ファイルへ変換する。
 
