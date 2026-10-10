@@ -3,69 +3,69 @@
 query="$1"
 
 if [ -z "$query" ]; then
-  echo "❌ Please provide a search query"
-  echo "Usage: /pm:search <query>"
+  echo "❌ 検索語の指定が必要"
+  echo "使用法: /pm:search <query>"
   exit 1
 fi
 
-echo "Searching for '$query'..."
+echo "'$query' を検索中..."
 echo ""
 echo ""
 
-echo "🔍 Search results for: '$query'"
+echo "🔍 検索結果: '$query'"
 echo "================================"
 echo ""
 
-# Search in PRDs
+# PRD 内の検索
 if [ -d ".claude/prds" ]; then
-  echo "📄 PRDs:"
+  echo "📄 PRD:"
   results=$(grep -l -i "$query" .claude/prds/*.md 2>/dev/null)
   if [ -n "$results" ]; then
     for file in $results; do
       name=$(basename "$file" .md)
       matches=$(grep -c -i "$query" "$file")
-      echo "  • $name ($matches matches)"
+      echo "  • $name ($matches 件一致)"
     done
   else
-    echo "  No matches"
+    echo "  一致なし"
   fi
   echo ""
 fi
 
-# Search in Epics
+# Epic 内の検索
 if [ -d ".claude/epics" ]; then
-  echo "📚 Epics:"
+  echo "📚 Epic:"
   results=$(find .claude/epics -name "epic.md" -exec grep -l -i "$query" {} \; 2>/dev/null)
   if [ -n "$results" ]; then
     for file in $results; do
       epic_name=$(basename $(dirname "$file"))
       matches=$(grep -c -i "$query" "$file")
-      echo "  • $epic_name ($matches matches)"
+      echo "  • $epic_name ($matches 件一致)"
     done
   else
-    echo "  No matches"
+    echo "  一致なし"
   fi
   echo ""
 fi
 
-# Search in Tasks
+# Task 内の検索
 if [ -d ".claude/epics" ]; then
-  echo "📝 Tasks:"
+  echo "📝 Task:"
   results=$(find .claude/epics -name "[0-9]*.md" -exec grep -l -i "$query" {} \; 2>/dev/null | head -10)
   if [ -n "$results" ]; then
     for file in $results; do
       epic_name=$(basename $(dirname "$file"))
       task_num=$(basename "$file" .md)
-      echo "  • Task #$task_num in $epic_name"
+      echo "  • Task #$task_num ($epic_name)"
     done
   else
-    echo "  No matches"
+    echo "  一致なし"
   fi
 fi
 
-# Summary
+# 要約
 total=$(find .claude -name "*.md" -exec grep -l -i "$query" {} \; 2>/dev/null | wc -l)
 echo ""
-echo "📊 Total files with matches: $total"
+echo "📊 一致ファイル総数: $total"
 
 exit 0

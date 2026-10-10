@@ -1,33 +1,33 @@
 # !/bin/bash
-# Check if PRD directory exists
+# PRD ディレクトリの存在確認
 if [ ! -d ".claude/prds" ]; then
-  echo "📁 No PRD directory found. Create your first PRD with: /pm:prd-new <feature-name>"
+  echo "📁 PRD ディレクトリ不在。最初の PRD の作成: /pm:prd-new <feature-name>"
   exit 0
 fi
 
-# Check for PRD files
+# PRD ファイルの確認
 if ! ls .claude/prds/*.md >/dev/null 2>&1; then
-  echo "📁 No PRDs found. Create your first PRD with: /pm:prd-new <feature-name>"
+  echo "📁 PRD 不在。最初の PRD の作成: /pm:prd-new <feature-name>"
   exit 0
 fi
 
-# Initialize counters
+# 計数器の初期化
 backlog_count=0
 in_progress_count=0
 implemented_count=0
 total_count=0
 
-echo "Getting PRDs..."
+echo "PRD を取得中..."
 echo ""
 echo ""
 
 
-echo "📋 PRD List"
+echo "📋 PRD 一覧"
 echo "==========="
 echo ""
 
-# Display by status groups
-echo "🔍 Backlog PRDs:"
+# status 群別に表示
+echo "🔍 Backlog の PRD:"
 for file in .claude/prds/*.md; do
   [ -f "$file" ] || continue
   status=$(grep "^status:" "$file" | head -1 | sed 's/^status: *//')
@@ -35,17 +35,17 @@ for file in .claude/prds/*.md; do
     name=$(grep "^name:" "$file" | head -1 | sed 's/^name: *//')
     desc=$(grep "^description:" "$file" | head -1 | sed 's/^description: *//')
     [ -z "$name" ] && name=$(basename "$file" .md)
-    [ -z "$desc" ] && desc="No description"
+    [ -z "$desc" ] && desc="説明なし"
     # echo "   📋 $name - $desc"
     echo "   📋 $file - $desc"
     ((backlog_count++))
   fi
   ((total_count++))
 done
-[ $backlog_count -eq 0 ] && echo "   (none)"
+[ $backlog_count -eq 0 ] && echo "   (なし)"
 
 echo ""
-echo "🔄 In-Progress PRDs:"
+echo "🔄 進行中の PRD:"
 for file in .claude/prds/*.md; do
   [ -f "$file" ] || continue
   status=$(grep "^status:" "$file" | head -1 | sed 's/^status: *//')
@@ -53,16 +53,16 @@ for file in .claude/prds/*.md; do
     name=$(grep "^name:" "$file" | head -1 | sed 's/^name: *//')
     desc=$(grep "^description:" "$file" | head -1 | sed 's/^description: *//')
     [ -z "$name" ] && name=$(basename "$file" .md)
-    [ -z "$desc" ] && desc="No description"
+    [ -z "$desc" ] && desc="説明なし"
     # echo "   📋 $name - $desc"
     echo "   📋 $file - $desc"
     ((in_progress_count++))
   fi
 done
-[ $in_progress_count -eq 0 ] && echo "   (none)"
+[ $in_progress_count -eq 0 ] && echo "   (なし)"
 
 echo ""
-echo "✅ Implemented PRDs:"
+echo "✅ 実装済みの PRD:"
 for file in .claude/prds/*.md; do
   [ -f "$file" ] || continue
   status=$(grep "^status:" "$file" | head -1 | sed 's/^status: *//')
@@ -70,20 +70,20 @@ for file in .claude/prds/*.md; do
     name=$(grep "^name:" "$file" | head -1 | sed 's/^name: *//')
     desc=$(grep "^description:" "$file" | head -1 | sed 's/^description: *//')
     [ -z "$name" ] && name=$(basename "$file" .md)
-    [ -z "$desc" ] && desc="No description"
+    [ -z "$desc" ] && desc="説明なし"
     # echo "   📋 $name - $desc"
     echo "   📋 $file - $desc"
     ((implemented_count++))
   fi
 done
-[ $implemented_count -eq 0 ] && echo "   (none)"
+[ $implemented_count -eq 0 ] && echo "   (なし)"
 
-# Display summary
+# 要約の表示
 echo ""
-echo "📊 PRD Summary"
-echo "   Total PRDs: $total_count"
+echo "📊 PRD 要約"
+echo "   PRD 総数: $total_count"
 echo "   Backlog: $backlog_count"
-echo "   In-Progress: $in_progress_count"
-echo "   Implemented: $implemented_count"
+echo "   進行中: $in_progress_count"
+echo "   実装済み: $implemented_count"
 
 exit 0

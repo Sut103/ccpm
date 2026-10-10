@@ -1,29 +1,29 @@
-# Plan — Capture Requirements
+# Plan — 要件定義
 
-This phase turns an idea into a structured PRD, then converts the PRD into a technical epic ready for decomposition.
+本 Phase では、構想を構造化した PRD へ整理し、さらに PRD を分解可能な技術 Epic へ変換する。
 
 ---
 
 ## Writing a PRD
 
-**Trigger**: User wants to plan a new feature, product requirement, or area of work.
+**起動条件**: 新機能、製品要件、作業領域の計画をユーザーが要望。
 
 ### Preflight
-- Check if `.claude/prds/<name>.md` already exists — if so, confirm overwrite before proceeding.
-- Ensure `.claude/prds/` directory exists; create it if not.
-- Feature name must be kebab-case (lowercase, letters/numbers/hyphens, starts with a letter). If not: "❌ Feature name must be kebab-case. Example: user-auth, payment-v2"
+- `.claude/prds/<name>.md` の既存有無を確認。既存の場合、続行前に上書きの可否を確認。
+- `.claude/prds/` ディレクトリの存在を確認。不在の場合は作成。
+- 機能名は kebab-case (小文字、英字・数字・ハイフンのみ、先頭は英字) 必須。違反時: 「❌ 機能名は kebab-case 必須。例: user-auth, payment-v2」
 
 ### Process
 
-Conduct a genuine brainstorming session before writing anything. Ask the user:
-- What problem does this solve?
-- Who are the users affected?
-- What does success look like?
-- How will we know each story is done? (outcomes that can be observed and checked from outside the system)
-- What's explicitly out of scope?
-- What are the constraints (tech, time, resources)?
+記述開始前に、実質的なブレインストーミングを実施。ユーザーへの質問事項:
+- 解決対象の課題
+- 影響を受けるユーザー
+- 成功の定義
+- 各 Story の完了判定方法 (システム外部から観測・確認可能な結果)
+- 明示的な対象外事項
+- 制約 (技術、期間、資源)
 
-Then write `.claude/prds/<name>.md` with this frontmatter and structure:
+その後、次の Frontmatter と構成で `.claude/prds/<name>.md` を作成。
 
 ```markdown
 ---
@@ -47,9 +47,9 @@ created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 ## Dependencies
 ```
 
-**User stories** get IDs: `US-1: As a <role>, I want <capability> so that <benefit>.`
+**User Story** には ID を付与: `US-1: As a <role>, I want <capability> so that <benefit>.`
 
-**Acceptance criteria** state, per story, the observable behavior that proves it is done. They are the root of the test chain (PRD `AC` → epic `TS` → task `TC`; see `conventions.md` → TDD & Test Traceability):
+**Acceptance Criteria** は、Story ごとに完了を証明する観測可能な振る舞いを記述。Test 連鎖の起点 (PRD `AC` → Epic `TS` → Task `TC`。`conventions.md` → TDD & Test Traceability 参照):
 
 ```markdown
 ## Acceptance Criteria
@@ -57,31 +57,31 @@ created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 - AC-2 (US-1): Given <context>, when <invalid action>, then <error the user sees>
 ```
 
-Write them from the user's point of view, with no implementation details (no class names, tables or endpoints).
+ユーザー視点で記述し、実装詳細 (クラス名、テーブル、エンドポイント) は含めない。
 
-**Quality gates before saving:**
-- No placeholder text in any section
-- Every user story has an ID (`US-<n>`) and at least one acceptance criterion (`AC-<n>`)
-- Acceptance criteria use Given/When/Then, are observable from outside the system, and contain no implementation details
-- Non-functional requirements that must be verified (performance, security, limits) are also written as acceptance criteria
-- Success criteria are measurable
-- Out of scope is explicitly listed
+**保存前の品質基準:**
+- 全セクションにプレースホルダー文字列なし
+- 全 User Story に ID (`US-<n>`) と一つ以上の Acceptance Criterion (`AC-<n>`) あり
+- Acceptance Criteria は Given/When/Then 形式、システム外部から観測可能、実装詳細なし
+- 検証必須の非機能要件 (性能、セキュリティ、上限) も Acceptance Criteria として記述
+- Success Criteria は計測可能
+- Out of Scope を明示的に列挙
 
-**After creation**: Confirm "✅ PRD created: `.claude/prds/<name>.md`" and suggest: "Ready to create technical epic? Say: parse the <name> PRD"
+**作成後**: 「✅ PRD 作成完了: `.claude/prds/<name>.md`」と報告し、「技術 Epic を作成する場合の指示例: <name> の PRD を Epic 化」と提案。
 
 ---
 
 ## Parsing a PRD into a Technical Epic
 
-**Trigger**: User wants to convert an existing PRD into a technical implementation plan.
+**起動条件**: 既存 PRD の技術的実装計画への変換をユーザーが要望。
 
 ### Preflight
-- Verify `.claude/prds/<name>.md` exists with valid frontmatter (name, description, status, created).
-- Check if `.claude/epics/<name>/epic.md` already exists — confirm overwrite if so.
+- `.claude/prds/<name>.md` の存在と Frontmatter (name, description, status, created) の妥当性を確認。
+- `.claude/epics/<name>/epic.md` の既存有無を確認。既存の場合は上書きの可否を確認。
 
 ### Process
 
-Read the PRD fully, then produce `.claude/epics/<name>/epic.md`:
+PRD を全文読了後、`.claude/epics/<name>/epic.md` を作成。
 
 ```markdown
 ---
@@ -112,10 +112,10 @@ delivery: merge
 ## Estimated Effort
 ```
 
-**Test Strategy** refines each PRD acceptance criterion into test scenarios:
+**Test Strategy** では、PRD の各 Acceptance Criterion を Test Scenario へ詳細化。
 
-- `### Test Levels & Tooling` — the test framework, the command that runs the full suite, and where tests live. Detect and reuse what the project already has (e.g. `package.json` scripts, `pytest.ini`, `go test`, `Cargo.toml`). Run the suite once and list any tests that already fail as baseline failures. If the project has no test tooling, propose it and plan a Setup task that introduces it; every other task depends on that task.
-- `### Acceptance Test Matrix` — one row per scenario:
+- `### Test Levels & Tooling` — Test フレームワーク、全テストスイートの実行コマンド、Test の配置場所。プロジェクトの既存資産 (`package.json` の scripts、`pytest.ini`、`go test`、`Cargo.toml` 等) を検出・再利用。テストスイートを一度実行し、既に失敗している Test を既知の失敗 (baseline failure) として列挙。Test 基盤が未整備の場合は導入を提案し、導入用の Setup Task を計画。他の全 Task は当該 Task に依存。
+- `### Acceptance Test Matrix` — Scenario ごとに一行:
 
 ```markdown
 | AC | Scenario | Level |
@@ -125,26 +125,26 @@ delivery: merge
 | AC-2 | TS-3: duplicate email is rejected with an error message | unit |
 ```
 
-Choose the lowest level that can prove the criterion; use e2e only for flows that span the whole stack.
+Criterion を証明可能な最低水準を選択。e2e は全層にわたるフローに限定。
 
-**Delivery**: ask the user how the finished work should reach main, and set `delivery` accordingly (see `conventions.md` → Delivery Modes):
-- `merge` (default): the epic branch is merged into main when all tasks are done.
-- `stack`: each task is submitted as its own pull request, and all of them form one linear stack. Tasks then run one after another (streams inside a task still run in parallel). Needs a GitHub repository and either `gh` or the GitHub MCP server.
+**Delivery**: 完了した作業の main への反映方法をユーザーに確認し、`delivery` を設定 (`conventions.md` → Delivery Modes 参照)。
+- `merge` (既定): 全 Task 完了時に Epic ブランチを main へマージ。
+- `stack`: 各 Task を個別の Pull Request として Submit し、全体で単一の直線的 stack を構成。Task は逐次実行 (Task 内の Stream は引き続き並列実行)。GitHub リポジトリと、`gh` または GitHub MCP サーバーが必要。
 
-In `## Task Breakdown Preview`, list the `TS-<n>` IDs each task is planned to cover. This is a plan for decomposition and is not maintained afterwards; once tasks exist, the `Covers` column of each task's `## Test Cases` is the record.
+`## Task Breakdown Preview` には、各 Task が担う予定の `TS-<n>` ID を列挙。分解用の計画であり、以後の保守は不要。Task 作成後は、各 Task の `## Test Cases` の `Covers` 列が記録。
 
-**Key constraints:**
-- Aim for ≤10 tasks total — prefer simplicity over completeness.
-- Look for ways to leverage existing functionality before creating new code.
-- Identify parallelization opportunities in the task breakdown preview.
-- Every PRD acceptance criterion appears in the Acceptance Test Matrix with at least one scenario.
+**主要制約:**
+- Task 総数は 10 以下を目標。網羅性より簡潔性を優先。
+- 新規コード作成の前に既存機能の活用余地を検討。
+- Task Breakdown Preview で並列化の余地を特定。
+- PRD の全 Acceptance Criterion を、一つ以上の Scenario と共に Acceptance Test Matrix へ記載。
 
-**After creation**: Confirm "✅ Epic created: `.claude/epics/<name>/epic.md`" and suggest: "Ready to decompose into tasks? Say: decompose the <name> epic"
+**作成後**: 「✅ Epic 作成完了: `.claude/epics/<name>/epic.md`」と報告し、「Task へ分解する場合の指示例: <name> の Epic を分解」と提案。
 
 ---
 
 ## Editing a PRD or Epic
 
-Read the file first, make targeted edits preserving all frontmatter. Update the `updated` frontmatter field with current datetime.
+先にファイルを読み、Frontmatter を全て保持したまま対象箇所のみ編集。Frontmatter の `updated` フィールドを現在日時へ更新。
 
-When acceptance criteria, scenarios or test cases change, follow `conventions.md` → Changing Test Cases to decide which levels to update.
+Acceptance Criteria、Scenario、Test Case の変更時は、`conventions.md` → Changing Test Cases に従い更新対象の階層を判断。

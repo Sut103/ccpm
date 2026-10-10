@@ -1,43 +1,43 @@
 #!/bin/bash
 
-echo "Validating PM System..."
+echo "PM システムを検証中..."
 echo ""
 echo ""
 
-echo "🔍 Validating PM System"
+echo "🔍 PM システムの検証"
 echo "======================="
 echo ""
 
 errors=0
 warnings=0
 
-# Check directory structure
-echo "📁 Directory Structure:"
-[ -d ".claude" ] && echo "  ✅ .claude directory exists" || { echo "  ❌ .claude directory missing"; ((errors++)); }
-[ -d ".claude/prds" ] && echo "  ✅ PRDs directory exists" || echo "  ⚠️ PRDs directory missing"
-[ -d ".claude/epics" ] && echo "  ✅ Epics directory exists" || echo "  ⚠️ Epics directory missing"
-[ -d ".claude/rules" ] && echo "  ✅ Rules directory exists" || echo "  ⚠️ Rules directory missing"
+# ディレクトリ構成の確認
+echo "📁 ディレクトリ構成:"
+[ -d ".claude" ] && echo "  ✅ .claude ディレクトリあり" || { echo "  ❌ .claude ディレクトリ不在"; ((errors++)); }
+[ -d ".claude/prds" ] && echo "  ✅ PRD ディレクトリあり" || echo "  ⚠️ PRD ディレクトリ不在"
+[ -d ".claude/epics" ] && echo "  ✅ Epic ディレクトリあり" || echo "  ⚠️ Epic ディレクトリ不在"
+[ -d ".claude/rules" ] && echo "  ✅ Rules ディレクトリあり" || echo "  ⚠️ Rules ディレクトリ不在"
 echo ""
 
-# Check for orphaned files
-echo "🗂️ Data Integrity:"
+# 孤立ファイルの確認
+echo "🗂️ データ整合性:"
 
-# Check epics have epic.md files
+# Epic に epic.md があるか確認
 for epic_dir in .claude/epics/*/; do
   [ -d "$epic_dir" ] || continue
   if [ ! -f "$epic_dir/epic.md" ]; then
-    echo "  ⚠️ Missing epic.md in $(basename "$epic_dir")"
+    echo "  ⚠️ $(basename "$epic_dir") に epic.md 不在"
     ((warnings++))
   fi
 done
 
-# Check for tasks without epics
+# Epic に属さない Task の確認
 orphaned=$(find .claude -name "[0-9]*.md" -not -path ".claude/epics/*/*" 2>/dev/null | wc -l)
-[ $orphaned -gt 0 ] && echo "  ⚠️ Found $orphaned orphaned task files" && ((warnings++))
+[ $orphaned -gt 0 ] && echo "  ⚠️ 孤立 Task ファイル $orphaned 件を検出" && ((warnings++))
 
-# Check for broken references
+# 破損参照の確認
 echo ""
-echo "🔗 Reference Check:"
+echo "🔗 参照確認:"
 
 for task_file in .claude/epics/*/[0-9]*.md; do
   [ -f "$task_file" ] || continue
@@ -53,7 +53,7 @@ for task_file in .claude/epics/*/[0-9]*.md; do
     epic_dir=$(dirname "$task_file")
     for dep in $deps; do
       if [ ! -f "$epic_dir/$dep.md" ]; then
-        echo "  ⚠️ Task $(basename "$task_file" .md) references missing task: $dep"
+        echo "  ⚠️ Task $(basename "$task_file" .md) が不在の Task を参照: $dep"
         ((warnings++))
       fi
     done
@@ -61,26 +61,26 @@ for task_file in .claude/epics/*/[0-9]*.md; do
 done
 
 if [ $warnings -eq 0 ] && [ $errors -eq 0 ]; then
-  echo "  ✅ All references valid"
+  echo "  ✅ 全参照が有効"
 fi
 
-# Check frontmatter
+# Frontmatter の確認
 echo ""
-echo "📝 Frontmatter Validation:"
+echo "📝 Frontmatter 検証:"
 invalid=0
 
 for file in $(find .claude -name "*.md" -path "*/epics/*" -o -path "*/prds/*" 2>/dev/null); do
   if ! grep -q "^---" "$file"; then
-    echo "  ⚠️ Missing frontmatter: $(basename "$file")"
+    echo "  ⚠️ Frontmatter 不在: $(basename "$file")"
     ((invalid++))
   fi
 done
 
-[ $invalid -eq 0 ] && echo "  ✅ All files have frontmatter"
+[ $invalid -eq 0 ] && echo "  ✅ 全ファイルに Frontmatter あり"
 
-# Check delivery mode, task status values and stack positions
+# Delivery Mode、Task の status 値、stack の position の確認
 echo ""
-echo "📦 Delivery & Status:"
+echo "📦 Delivery と Status:"
 delivery_issues=0
 
 for epic_dir in .claude/epics/*/; do
@@ -90,7 +90,7 @@ for epic_dir in .claude/epics/*/; do
 
   case "${delivery:-merge}" in
     merge|stack) ;;
-    *) echo "  ⚠️ Epic $epic_name has an invalid delivery: $delivery (expected merge or stack)"; ((warnings++)); ((delivery_issues++)) ;;
+    *) echo "  ⚠️ Epic $epic_name の delivery が不正: $delivery (merge または stack が必要)"; ((warnings++)); ((delivery_issues++)) ;;
   esac
 
   for task_file in "$epic_dir"[0-9]*.md; do
@@ -101,36 +101,36 @@ for epic_dir in .claude/epics/*/; do
       open|in-progress|closed) ;;
       in-review)
         if [ "$delivery" != "stack" ]; then
-          echo "  ⚠️ Task $(basename "$task_file" .md) is in-review, but epic $epic_name does not use stack delivery"
+          echo "  ⚠️ Task $(basename "$task_file" .md) が in-review だが、Epic $epic_name は stack delivery 非対象"
           ((warnings++)); ((delivery_issues++))
         fi ;;
-      *) echo "  ⚠️ Task $(basename "$task_file" .md) has an invalid status: ${task_status:-unset}"; ((warnings++)); ((delivery_issues++)) ;;
+      *) echo "  ⚠️ Task $(basename "$task_file" .md) の status が不正: ${task_status:-unset}"; ((warnings++)); ((delivery_issues++)) ;;
     esac
   done
 
   if [ "$delivery" = "stack" ] && ls "$epic_dir"[0-9]*.md >/dev/null 2>&1; then
     if ! bash "$(dirname "$0")/stack-plan.sh" "$epic_name" --check >/dev/null 2>&1; then
-      echo "  ⚠️ Stack positions in $epic_name do not match the plan. Run: stack-plan.sh $epic_name"
+      echo "  ⚠️ $epic_name の stack の position が計画と不一致。実行: stack-plan.sh $epic_name"
       ((warnings++)); ((delivery_issues++))
     fi
   fi
 done
 
-[ $delivery_issues -eq 0 ] && echo "  ✅ Delivery modes, statuses and stack positions valid"
+[ $delivery_issues -eq 0 ] && echo "  ✅ Delivery Mode、status、stack の position が全て有効"
 
-# Summary
+# 要約
 echo ""
-echo "📊 Validation Summary:"
-echo "  Errors: $errors"
-echo "  Warnings: $warnings"
-echo "  Invalid files: $invalid"
+echo "📊 検証要約:"
+echo "  エラー: $errors"
+echo "  警告: $warnings"
+echo "  不正ファイル: $invalid"
 
 if [ $errors -eq 0 ] && [ $warnings -eq 0 ] && [ $invalid -eq 0 ]; then
   echo ""
-  echo "✅ System is healthy!"
+  echo "✅ システム正常"
 else
   echo ""
-  echo "💡 Run /pm:clean to fix some issues automatically"
+  echo "💡 /pm:clean の実行で一部問題を自動修正"
 fi
 
 exit 0
