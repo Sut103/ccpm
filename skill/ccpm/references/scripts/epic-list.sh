@@ -1,47 +1,47 @@
 #!/bin/bash
-echo "Getting epics..."
+echo "Epic を取得中..."
 echo ""
 echo ""
 
-[ ! -d ".claude/epics" ] && echo "📁 No epics directory found. Create your first epic with: /pm:prd-parse <feature-name>" && exit 0
-[ -z "$(ls -d .claude/epics/*/ 2>/dev/null)" ] && echo "📁 No epics found. Create your first epic with: /pm:prd-parse <feature-name>" && exit 0
+[ ! -d ".claude/epics" ] && echo "📁 Epic directory 不在。最初の Epic の作成: /pm:prd-parse <feature-name>" && exit 0
+[ -z "$(ls -d .claude/epics/*/ 2>/dev/null)" ] && echo "📁 Epic 不在。最初の Epic の作成: /pm:prd-parse <feature-name>" && exit 0
 
-echo "📚 Project Epics"
+echo "📚 プロジェクトの Epic"
 echo "================"
 echo ""
 
-# Initialize arrays to store epics by status
+# status 別に Epic を格納する配列の初期化
 planning_epics=""
 in_progress_epics=""
 completed_epics=""
 
-# Process all epics
+# 全 Epic の処理
 for dir in .claude/epics/*/; do
   [ -d "$dir" ] || continue
   [ -f "$dir/epic.md" ] || continue
 
-  # Extract metadata
+  # metadata の抽出
   n=$(grep "^name:" "$dir/epic.md" | head -1 | sed 's/^name: *//')
   s=$(grep "^status:" "$dir/epic.md" | head -1 | sed 's/^status: *//' | tr '[:upper:]' '[:lower:]')
   p=$(grep "^progress:" "$dir/epic.md" | head -1 | sed 's/^progress: *//')
   g=$(grep "^github:" "$dir/epic.md" | head -1 | sed 's/^github: *//')
 
-  # Defaults
+  # 既定値
   [ -z "$n" ] && n=$(basename "$dir")
   [ -z "$p" ] && p="0%"
 
-  # Count tasks
+  # Task の計数
   t=$(ls "$dir"/[0-9]*.md 2>/dev/null | wc -l)
 
-  # Format output with GitHub issue number if available
+  # GitHub Issue 番号があれば付加して出力を整形
   if [ -n "$g" ]; then
     i=$(echo "$g" | grep -o '/[0-9]*$' | tr -d '/')
-    entry="   📋 ${dir}epic.md (#$i) - $p complete ($t tasks)"
+    entry="   📋 ${dir}epic.md (#$i) - $p 完了 ($t Task)"
   else
-    entry="   📋 ${dir}epic.md - $p complete ($t tasks)"
+    entry="   📋 ${dir}epic.md - $p 完了 ($t Task)"
   fi
 
-  # Categorize by status (handle various status values)
+  # status 別に分類 (多様な status 値に対応)
   case "$s" in
     planning|draft|"")
       planning_epics="${planning_epics}${entry}\n"
@@ -53,42 +53,42 @@ for dir in .claude/epics/*/; do
       completed_epics="${completed_epics}${entry}\n"
       ;;
     *)
-      # Default to planning for unknown statuses
+      # 未知の status は planning 扱い
       planning_epics="${planning_epics}${entry}\n"
       ;;
   esac
 done
 
-# Display categorized epics
-echo "📝 Planning:"
+# 分類済み Epic の表示
+echo "📝 計画中:"
 if [ -n "$planning_epics" ]; then
   echo -e "$planning_epics" | sed '/^$/d'
 else
-  echo "   (none)"
+  echo "   (なし)"
 fi
 
 echo ""
-echo "🚀 In Progress:"
+echo "🚀 進行中:"
 if [ -n "$in_progress_epics" ]; then
   echo -e "$in_progress_epics" | sed '/^$/d'
 else
-  echo "   (none)"
+  echo "   (なし)"
 fi
 
 echo ""
-echo "✅ Completed:"
+echo "✅ 完了:"
 if [ -n "$completed_epics" ]; then
   echo -e "$completed_epics" | sed '/^$/d'
 else
-  echo "   (none)"
+  echo "   (なし)"
 fi
 
-# Summary
+# 要約
 echo ""
-echo "📊 Summary"
+echo "📊 要約"
 total=$(ls -d .claude/epics/*/ 2>/dev/null | wc -l)
 tasks=$(find .claude/epics -name "[0-9]*.md" 2>/dev/null | wc -l)
-echo "   Total epics: $total"
-echo "   Total tasks: $tasks"
+echo "   Epic 総数: $total"
+echo "   Task 総数: $tasks"
 
 exit 0

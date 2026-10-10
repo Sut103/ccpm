@@ -1,19 +1,19 @@
 #!/bin/bash
-# Compute the layer order of a stack-mode epic: every task becomes one layer of a
-# single linear stack. Tasks that already have a position keep it; tasks without one
-# are appended on top in depends_on topological order (lowest task number first).
+# stack delivery の Epic の Layer 順序を算出: 全 Task が単一の直線的 stack の一 Layer となる。
+# position を持つ Task はその値を維持し、持たない Task は depends_on の topological 順
+# (Task 番号の小さい順) で上に追加。
 #
 # Usage: stack-plan.sh <epic-name> [--write | --check]
-#   (none)   print the plan
-#   --write  also set `position:` in each task's frontmatter
-#   --check  exit 1 unless every task has the position the plan gives it
+#   (なし)   計画を表示
+#   --write  各 Task の Frontmatter に `position:` も設定
+#   --check  全 Task の position が計画と一致しない場合 exit 1
 
 epic_name="$1"
 mode="${2:-}"
 
 if [ -z "$epic_name" ]; then
-  echo "❌ Please specify an epic name"
-  echo "Usage: stack-plan.sh <epic-name> [--write | --check]"
+  echo "❌ Epic 名の指定が必要"
+  echo "使用法: stack-plan.sh <epic-name> [--write | --check]"
   exit 1
 fi
 
@@ -21,11 +21,11 @@ epic_dir=".claude/epics/$epic_name"
 epic_file="$epic_dir/epic.md"
 
 if [ ! -f "$epic_file" ]; then
-  echo "❌ Epic not found: $epic_name"
+  echo "❌ Epic 不在: $epic_name"
   exit 1
 fi
 
-# Value of a frontmatter field (body lines are ignored)
+# Frontmatter field の値 (本文の行は無視)
 fm_get() {
   awk -v k="$1" '
     NR==1 && /^---$/ {fm=1; next}
@@ -33,7 +33,7 @@ fm_get() {
     fm && index($0, k":")==1 {sub("^" k ": *", ""); print; exit}' "$2"
 }
 
-# Set a frontmatter field, adding it before the closing --- if missing
+# Frontmatter field を設定。不在の場合は閉じの --- の直前に追加
 fm_set() {
   awk -v k="$1" -v v="$2" '
     NR==1 && /^---$/ {fm=1; print; next}
@@ -44,11 +44,11 @@ fm_set() {
 
 delivery=$(fm_get delivery "$epic_file")
 if [ "$delivery" != "stack" ]; then
-  echo "❌ Epic $epic_name does not use stack delivery (delivery: ${delivery:-merge})"
+  echo "❌ Epic $epic_name は stack delivery 非対象 (delivery: ${delivery:-merge})"
   exit 1
 fi
 
-# Task numbers (as integers) and their files; analysis and other files are skipped
+# Task 番号 (整数) とそのファイル。分析ファイル等は除外
 tasks=""
 for f in "$epic_dir"/[0-9]*.md; do
   [ -f "$f" ] || continue
@@ -59,7 +59,7 @@ done
 tasks=$(echo $tasks | tr ' ' '\n' | sort -n | tr '\n' ' ')
 
 if [ -z "${tasks// /}" ]; then
-  echo "❌ No tasks in epic: $epic_name"
+  echo "❌ Epic 内に Task なし: $epic_name"
   exit 1
 fi
 
@@ -77,13 +77,13 @@ task_deps() {
   done
 }
 
-# Tasks that already have a position keep their order
+# position を持つ Task は順序を維持
 positioned=""
 unpositioned=""
 for t in $tasks; do
   pos=$(fm_get position "$(task_file "$t")")
   if [ -n "$pos" ]; then
-    case "$pos" in *[!0-9]*) echo "❌ Task $t has an invalid position: $pos"; exit 1 ;; esac
+    case "$pos" in *[!0-9]*) echo "❌ Task $t の position が不正: $pos"; exit 1 ;; esac
     positioned="$positioned
 $pos $t"
   else
@@ -93,13 +93,13 @@ done
 
 dup=$(echo "$positioned" | awk 'NF {print $1}' | sort -n | uniq -d | head -1)
 if [ -n "$dup" ]; then
-  echo "❌ Position $dup is used by more than one task"
+  echo "❌ Position $dup が複数 Task で重複"
   exit 1
 fi
 
 order=$(echo "$positioned" | awk 'NF' | sort -n | awk '{print $2}' | tr '\n' ' ')
 
-# Append the rest: always take the lowest-numbered task whose dependencies are placed
+# 残りを追加: 依存先が配置済みの Task のうち、常に最小番号の Task を選択
 remaining="$unpositioned"
 while [ -n "${remaining// /}" ]; do
   picked=""
@@ -111,19 +111,19 @@ while [ -n "${remaining// /}" ]; do
     [ $ready -eq 1 ] && { picked=$t; break; }
   done
   if [ -z "$picked" ]; then
-    echo "❌ Circular or missing dependency among tasks:$remaining"
+    echo "❌ Task 間に循環依存または依存先の欠落:$remaining"
     exit 1
   fi
   order="$order $picked"
   remaining=$(echo " $remaining " | sed "s/ $picked / /")
 done
 
-# Every dependency must sit below the task that depends on it
+# 全依存先は依存元 Task より下位に配置必須
 placed=" "
 for t in $order; do
   for d in $(task_deps "$t"); do
     case "$placed" in *" $d "*) ;; *)
-      echo "❌ Task $t depends on $d, which is not below it in the stack"
+      echo "❌ Task $t は $d に依存するが、$d が stack 内で下位にない"
       exit 1 ;;
     esac
   done
@@ -151,15 +151,15 @@ for t in $order; do
 
   case "$mode" in
     --write) [ "$current" != "$pos" ] && fm_set position "$pos" "$f" ;;
-    --check) [ "$current" != "$pos" ] && { echo "     ⚠️ position is '${current:-unset}', expected $pos"; status=1; } ;;
+    --check) [ "$current" != "$pos" ] && { echo "     ⚠️ position は '${current:-未設定}'、期待値は $pos"; status=1; } ;;
   esac
   prev="$num"
 done
 
 echo ""
 case "$mode" in
-  --write) echo "✅ Positions written for $pos tasks" ;;
-  --check) [ $status -eq 0 ] && echo "✅ Positions match the stack plan" || echo "❌ Positions do not match. Run: stack-plan.sh $epic_name --write" ;;
+  --write) echo "✅ $pos Task の position を書込" ;;
+  --check) [ $status -eq 0 ] && echo "✅ position は stack 計画と一致" || echo "❌ position 不一致。実行: stack-plan.sh $epic_name --write" ;;
 esac
 
 exit $status

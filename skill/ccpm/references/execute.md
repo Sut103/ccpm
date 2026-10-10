@@ -1,40 +1,40 @@
-# Execute — Start Building with Parallel Agents
+# Execute — 並列エージェントによる構築開始
 
-This phase covers analyzing GitHub issues for parallel work streams and launching agents to execute them.
+本 Phase では、GitHub Issue を並列 Stream の観点で分析し、それを実行するエージェントを起動する。
 
 ---
 
 ## Issue Analysis
 
-**Trigger**: User wants to understand how to parallelize work on an issue before starting.
+**起動条件**: 着手前に Issue の作業の並列化方法の把握をユーザーが要望。
 
 ### Preflight
-- Find the local task file: check `.claude/epics/*/<N>.md` first, then search for `github:.*issues/<N>` in frontmatter.
-- If not found: "❌ No local task for issue #<N>. Run a sync first."
+- ローカルの Task ファイルを特定: 先に `.claude/epics/*/<N>.md` を確認し、次に Frontmatter 内の `github:.*issues/<N>` を検索。
+- 不在の場合: 「❌ Issue #<N> に対応するローカル Task なし。先に Sync を実行。」
 
 ### Process
 
-Get issue details: `gh issue view <N> --json title,body,labels`
+Issue 詳細を取得: `gh issue view <N> --json title,body,labels`
 
-Read the local task file fully. Identify independent work streams by asking:
-- Which files will be created/modified?
-- Which changes can happen simultaneously without conflict?
-- What are the dependencies between changes?
-- Which test cases (`TC-<n>`) from the task file does each stream's behavior cover?
+ローカルの Task ファイルを全文読了。次の観点で独立した Stream を特定:
+- 作成・変更対象のファイル
+- 競合なしに同時進行可能な変更
+- 変更間の依存関係
+- 各 Stream の振る舞いが担う Task ファイル内の Test Case (`TC-<n>`)
 
-**Common stream patterns:**
-- Database Layer: schema, migrations, models
-- Service Layer: business logic, data access
-- API Layer: endpoints, validation, middleware
-- UI Layer: components, pages, styles
+**代表的な Stream 構成:**
+- Database Layer: schema、migration、model
+- Service Layer: business logic、data access
+- API Layer: endpoint、validation、middleware
+- UI Layer: component、ページ、スタイル
 
-There is no separate test stream: each stream owns the test cases for the behavior it builds and writes them first (see `conventions.md` → TDD & Test Traceability). Assign every `TC-<n>` in the task file to exactly one stream:
-- A test case that needs the work of several streams goes to the stream that finishes last in the dependency chain; assigning it to an earlier stream deadlocks, because that stream cannot pass the test until later streams are done.
-- Every stream that adds behavior owns at least one test case. If an earlier stream is left with none, add unit-level test cases for its part to the task's `## Test Cases` (a task-only change, see `conventions.md` → Changing Test Cases), or merge it into the stream that owns the test case. A stream that adds no observable behavior writes `N/A — <reason>` instead (see Exceptions).
-- Test cases that share a test file go to the same stream; otherwise split the file. List each stream's test files in its **Files**.
-- Shared test fixtures and helpers follow the shared-file rule below: one designated stream owns them.
+Test 専用の Stream は設けない。各 Stream が自身の構築する振る舞いの Test Case を担い、先行作成する (`conventions.md` → TDD & Test Traceability 参照)。Task ファイル内の全 `TC-<n>` を、それぞれ厳密に一つの Stream へ割当:
+- 複数 Stream の成果を要する Test Case は、依存連鎖で最後に完了する Stream へ割当。先行 Stream へ割り当てた場合、後続 Stream の完了まで当該 Test を通過できず、deadlock が発生。
+- 振る舞いを追加する Stream は、全て一つ以上の Test Case を担う。先行 Stream に Test Case が残らない場合、その担当部分の unit 水準の Test Case を Task の `## Test Cases` へ追加 (Task のみの変更。`conventions.md` → Changing Test Cases 参照) するか、当該 Stream を Test Case を担う Stream へ統合。観測可能な振る舞いを追加しない Stream は、代わりに `N/A — <reason>` と記載 (`conventions.md` → 例外 参照)。
+- Test ファイルを共有する Test Case は同一 Stream へ割当。そうでなければファイルを分割。各 Stream の Test ファイルを **Files** に列挙。
+- 共有の Test fixture や helper は後述の共有ファイル規則に従い、指定の一 Stream が担う。
 
-Create `.claude/epics/<epic_name>/<N>-analysis.md`:
+`.claude/epics/<epic_name>/<N>-analysis.md` を作成:
 
 ```markdown
 ---
@@ -80,37 +80,37 @@ parallelization_factor: <1.0-5.0>
 - Efficiency gain: <pct>%
 ```
 
-**Output**: "✅ Analysis complete for issue #<N> — N parallel streams identified. Ready to start? Say: start issue <N>"
+**出力**: 「✅ Issue #<N> の分析完了 — 並列 Stream を N 件特定。着手する場合の指示例: Issue <N> を開始」
 
 ---
 
 ## Starting an Issue
 
-**Trigger**: User wants to begin work on a specific GitHub issue.
+**起動条件**: 特定の GitHub Issue への着手をユーザーが要望。
 
 ### Preflight
-1. Verify issue exists and is open: `gh issue view <N> --json state,title,labels,body`
-2. Find local task file (as above).
-3. Check for analysis file: `.claude/epics/*/<N>-analysis.md` — if missing, run analysis first (or do both in sequence: analyze then start).
-4. Verify epic worktree exists: `git worktree list | grep "epic-<name>"` — if not: "❌ No worktree. Sync the epic first."
-5. Stack delivery only: the task directly below this one (by `position`) is `in-review` or `closed`, or this is the bottom layer. Otherwise: "❌ #<N> waits for layer #<below_N> to be submitted." Then put the worktree on this layer's branch:
+1. Issue の存在と open 状態を確認: `gh issue view <N> --json state,title,labels,body`
+2. ローカルの Task ファイルを特定 (前述と同様)。
+3. 分析ファイル `.claude/epics/*/<N>-analysis.md` の有無を確認。不在の場合は先に分析を実施 (または分析と開始を連続実行)。
+4. Epic Worktree の存在を確認: `git worktree list | grep "epic-<name>"`。不在の場合: 「❌ Worktree なし。先に Epic を Sync。」
+5. stack delivery 専用: 直下の Task (`position` 基準) が `in-review` または `closed`、もしくは当該 Task が最下層であること。それ以外の場合: 「❌ #<N> は Layer #<below_N> の Submit 待ち。」 条件を満たす場合、Worktree を当該 Layer の branch へ切替:
    ```bash
    cd ../epic-<name>
    git checkout epic/<name>/<N> 2>/dev/null || git checkout -b epic/<name>/<N> epic/<name>/<below_N>
    ```
-   The bottom layer's branch already exists from the epic sync.
+   最下層の branch は Epic の Sync 時に作成済み。
 
 ### Process
 
-**Step 1 — Read the analysis**, identify which streams can start immediately vs. which have dependencies.
+**Step 1 — 分析の読込**。即時着手可能な Stream と依存関係を持つ Stream を判別。
 
-**Step 2 — Create progress tracking:**
+**Step 2 — 進捗管理の準備:**
 ```bash
 mkdir -p .claude/epics/<epic>/updates/<N>
 current_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 ```
 
-Create `.claude/epics/<epic>/updates/<N>/stream-<X>.md` for each stream:
+Stream ごとに `.claude/epics/<epic>/updates/<N>/stream-<X>.md` を作成:
 ```markdown
 ---
 issue: <N>
@@ -123,54 +123,54 @@ status: in_progress
 - Starting implementation
 ```
 
-**Step 3 — Launch parallel agents** for each stream that can start immediately:
+**Step 3 — 並列エージェントの起動**。即時着手可能な各 Stream が対象:
 
 ```yaml
 Task:
   description: "Issue #<N> Stream <X>"
   subagent_type: "general-purpose"
   prompt: |
-    You are working on Issue #<N> in the epic worktree at: ../epic-<name>/
-    Stack delivery only — your branch: epic/<name>/<N>. Never switch branches.
+    担当: Issue #<N>。作業場所は Epic Worktree ../epic-<name>/
+    stack delivery 専用 — 担当 branch: epic/<name>/<N>。branch 切替は厳禁。
     
-    Your stream: <stream_name>
-    Your scope — files to modify: <file_patterns>
-    Your test cases: <TC IDs>
-    Work to complete: <stream_description>
+    担当 Stream: <stream_name>
+    担当範囲 — 変更対象ファイル: <file_patterns>
+    担当 Test Case: <TC IDs>
+    作業内容: <stream_description>
     
-    Instructions:
-    1. Read full task from: .claude/epics/<epic>/<N>.md
-    2. Read analysis from: .claude/epics/<epic>/<N>-analysis.md
-    3. Read TDD rules from: <skill_path>/references/conventions.md → TDD & Test Traceability
-    4. Work ONLY in your assigned files
-    5. Work test-first, following those rules:
-       a. Red: write tests for your test cases, tagged "[#<N> TC-<n>]", run them, and
-          confirm they fail for the expected reason (commit a minimal stub with them if the
-          test cannot compile). Commit: "Issue #<N>: add failing tests for <TC IDs>"
-       b. Green: write the minimal code that makes them pass.
-          Commit: "Issue #<N>: <specific change>"
-       c. Refactor: clean up while keeping all tests green. Commit if anything changed.
-       If your stream's Test Cases are "N/A — <reason>", skip the test steps (Red, Green,
-       Refactor): do the work described, then go to step 6.
-    6. Run the project's full test suite (<test command from the epic's Test Strategy>).
-       If your change broke a previously passing test, fix your change. Failing tests of
-       another active stream or another open task are expected; leave them alone. If the
-       suite cannot build because of someone else's change, wait and pull; don't fix it.
-    7. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
-    8. If you need to touch files outside your scope, note it in your progress file and wait
-    9. Never use --force on git operations
+    指示:
+    1. Task 全文を読込: .claude/epics/<epic>/<N>.md
+    2. 分析を読込: .claude/epics/<epic>/<N>-analysis.md
+    3. TDD 規則を読込: <skill_path>/references/conventions.md → TDD & Test Traceability
+    4. 作業は割当ファイルに限定
+    5. 上記規則に従い Test 先行で作業:
+       a. Red: 担当 Test Case の Test を "[#<N> TC-<n>]" tag 付きで作成・実行し、
+          想定どおりの理由での失敗を確認 (Test が compile 不能な場合は最小限の stub を
+          同時に commit)。commit: "Issue #<N>: add failing tests for <TC IDs>"
+       b. Green: Test を通過させる最小限のコードを作成。
+          commit: "Issue #<N>: <specific change>"
+       c. Refactor: 全 Test の通過を維持したまま整理。変更があれば commit。
+       担当 Stream の Test Cases が "N/A — <reason>" の場合、Test 関連手順 (Red, Green,
+       Refactor) を省略し、記載の作業を実施後、手順 6 へ進む。
+    6. プロジェクトの全 test suite を実行 (<test command from the epic's Test Strategy>)。
+       自身の変更で既存の通過 Test が失敗した場合は自身の変更を修正。他の稼働中 Stream や
+       他の未完了 Task の失敗 Test は想定内のため放置。他者の変更により test suite が
+       build 不能の場合は、待機して pull。自身では修正しない。
+    7. 進捗を更新: .claude/epics/<epic>/updates/<N>/stream-<X>.md
+    8. 担当範囲外のファイル変更が必要な場合、進捗ファイルに記録して待機
+    9. git 操作での --force 使用は厳禁
     
-    Mark status: completed only when all your test cases pass and no previously passing test fails.
+    status: completed は、担当 Test Case が全て通過し、既存の通過 Test に失敗がない場合に限り設定。
 ```
 
-Streams with unmet dependencies are queued — launch them as their dependencies complete.
+未充足の依存関係を持つ Stream は待機列へ入れ、依存先の完了に応じて起動。
 
-**Step 4 — Assign on GitHub:**
+**Step 4 — GitHub での担当設定:**
 ```bash
 gh issue edit <N> --add-assignee @me --add-label "in-progress"
 ```
 
-**Step 5 — Create execution status file** at `.claude/epics/<epic>/updates/<N>/execution.md`:
+**Step 5 — 実行状態ファイルの作成**。配置先は `.claude/epics/<epic>/updates/<N>/execution.md`:
 ```markdown
 ## Active Streams
 - Stream A: <name> — Started <time>
@@ -183,62 +183,62 @@ gh issue edit <N> --add-assignee @me --add-label "in-progress"
 (none yet)
 ```
 
-**Output:**
+**出力:**
 ```
-✅ Started work on issue #<N>
+✅ Issue #<N> の作業開始
 
-Launched N agents:
-  Stream A: <name> ✓ Started
-  Stream B: <name> ✓ Started
-  Stream C: <name> ⏸ Waiting (depends on A)
+エージェントを N 件起動:
+  Stream A: <name> ✓ 開始
+  Stream B: <name> ✓ 開始
+  Stream C: <name> ⏸ 待機 (A に依存)
 
-Monitor: check progress in .claude/epics/<epic>/updates/<N>/
-Sync updates: "sync issue <N>"
+監視: .claude/epics/<epic>/updates/<N>/ で進捗確認
+更新の Sync: 「Issue <N> を Sync」
 ```
 
-With stack delivery, submit the task once every stream has completed (`sync.md` → Submitting a Task).
+stack delivery の場合、全 Stream の完了後に Task を Submit (`sync.md` → Submitting a Task)。
 
 ---
 
 ## Starting a Full Epic
 
-**Trigger**: User wants to launch parallel agents across all ready issues in an epic at once.
+**起動条件**: Epic 内の着手可能な全 Issue に対する並列エージェントの一括起動をユーザーが要望。
 
 ### Preflight
-- Verify `.claude/epics/<name>/epic.md` exists and has a `github:` field (i.e., it's been synced).
-- Check for uncommitted changes: `git status --porcelain` — block if dirty.
-- Verify epic branch exists: `git branch -a | grep "epic/<name>"`
+- `.claude/epics/<name>/epic.md` の存在と `github:` field の有無 (Sync 済みであること) を確認。
+- 未 commit の変更を確認: `git status --porcelain`。変更が残存する場合は中断。
+- Epic branch の存在を確認: `git branch -a | grep "epic/<name>"`
 
 ### Process
 
-**Step 1 — Read all task files** in `.claude/epics/<name>/`. Parse frontmatter for `status`, `depends_on`, `parallel`.
+**Step 1 — 全 Task ファイルの読込**。対象は `.claude/epics/<name>/`。Frontmatter から `status`、`depends_on`、`parallel` を解析。
 
-**Step 2 — Categorize tasks:**
-- Ready: status=open, no unmet depends_on
-- Blocked: has unmet depends_on
-- In Progress: already has an execution file
+**Step 2 — Task の分類:**
+- Ready: status=open、未充足の depends_on なし
+- Blocked: 未充足の depends_on あり
+- In Progress: 実行ファイルが既存
 - Complete: status=closed
 
-**Step 3 — Analyze any ready tasks** that don't have an analysis file yet (run issue analysis inline).
+**Step 3 — 着手可能 Task の分析**。分析ファイルが未作成のものが対象 (Issue Analysis をその場で実施)。
 
-**Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above. With stack delivery, only one task is ready at a time: the lowest layer that is still `open`.
+**Step 4 — エージェントの起動**。着手可能な全 Task について、前述の Issue 単位の起動手順と同様に実施。stack delivery では、着手可能な Task は常に一件のみ (`open` のままの最下位 Layer)。
 
-**Step 5 — Create/update** `.claude/epics/<name>/execution-status.md` with all active agents and queued issues.
+**Step 5 — 作成・更新**。`.claude/epics/<name>/execution-status.md` に稼働中の全エージェントと待機中の Issue を記録。
 
-**Step 6 — As agents complete**, check if blocked issues are now unblocked and launch those agents. With stack delivery, submit the finished task first; its submission unblocks the next layer.
+**Step 6 — エージェント完了時**、阻害中だった Issue の解除を確認し、該当エージェントを起動。stack delivery では、完了した Task を先に Submit。その Submit により次の Layer の阻害が解除。
 
 ---
 
-## Agent Coordination Rules
+## エージェント協調規則
 
-When multiple agents work in the same worktree simultaneously:
+複数エージェントが同一 Worktree で同時に作業する場合:
 
-- Each agent works only on files in its assigned stream scope.
-- Agents commit frequently with `Issue #<N>: <description>` format.
-- Before modifying a shared file, check `git status <file>` — if another agent has it modified, wait and pull first.
-- Agents sync via commits: `git pull --rebase origin epic/<name>` before starting new file work. With stack delivery the layer branch exists only locally until it is submitted, so skip the pull.
-- Conflicts are never auto-resolved — agents report them and pause.
-- A stream is not complete until its own test cases pass and no previously passing test fails. Red tests from another active stream or open task are expected while that work is in progress; leave them alone. Never weaken or delete a test to make it pass.
-- No `--force` flags ever.
+- 各エージェントは割当 Stream の範囲内のファイルのみ操作。
+- エージェントは `Issue #<N>: <description>` 形式で頻繁に commit。
+- 共有ファイルの変更前に `git status <file>` を確認。他エージェントが変更中の場合、待機して先に pull。
+- エージェント間の同期は commit 経由: 新規ファイル作業の開始前に `git pull --rebase origin epic/<name>`。stack delivery では Layer branch は Submit までローカルのみに存在するため、pull を省略。
+- 競合の自動解決は厳禁。エージェントは報告して一時停止。
+- Stream の完了条件は、自身の Test Case が全て通過し、既存の通過 Test に失敗がないこと。他の稼働中 Stream や未完了 Task の Red Test は作業中のため想定内であり、放置。Test を通過させる目的での Test の弱化・削除は厳禁。
+- `--force` flag は一切使用禁止。
 
-Shared files that commonly need coordination (types, config, package.json) should be handled by one designated stream; others pull after that commit.
+調整を要しがちな共有ファイル (型定義、設定、package.json) は指定の一 Stream が担当し、他 Stream はその commit 後に pull。
