@@ -94,6 +94,8 @@ conflicts_with: []
 - Each test case has a concrete input and expected output; no wording like "works correctly".
 - `## Test Cases` is never empty: it holds test cases or `N/A — <reason>`.
 
+**Stack delivery** (`delivery: stack` in the epic): every task becomes one pull request, so size each task to be reviewed in one sitting — about 400 changed lines or less. Split a task estimated at XL. Order still comes only from `depends_on`; all tasks end up in one linear stack.
+
 **Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitHub issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
 
 ### After Creating All Tasks
@@ -111,6 +113,16 @@ Sequential tasks: N
 Test cases: N (test scenarios covered: N/N)
 Estimated total effort: N hours
 ```
+
+With stack delivery, then run `bash references/scripts/stack-plan.sh <name> --write` and append its layer order to the epic file:
+
+```markdown
+## Stack
+1. 001.md - <Title> (base: main)
+2. 002.md - <Title> (base: 001)
+```
+
+If the script reports a cycle, fix `depends_on` before going on.
 
 **After completion**: Confirm "✅ Created N tasks for epic: <name>" and suggest: "Ready to push to GitHub? Say: sync the <name> epic"
 

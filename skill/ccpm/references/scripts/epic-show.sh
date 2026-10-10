@@ -60,6 +60,9 @@ for task_file in "$epic_dir"/[0-9]*.md; do
   if [ "$task_status" = "closed" ] || [ "$task_status" = "completed" ]; then
     echo "  ✅ #$task_num - $task_name"
     ((closed_count++))
+  elif [ "$task_status" = "in-review" ]; then
+    echo "  🔍 #$task_num - $task_name (in review)"
+    ((open_count++))
   else
     echo "  ⬜ #$task_num - $task_name"
     [ "$parallel" = "true" ] && echo -n " (parallel)"

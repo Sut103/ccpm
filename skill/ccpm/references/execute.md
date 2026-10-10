@@ -93,6 +93,12 @@ parallelization_factor: <1.0-5.0>
 2. Find local task file (as above).
 3. Check for analysis file: `.claude/epics/*/<N>-analysis.md` — if missing, run analysis first (or do both in sequence: analyze then start).
 4. Verify epic worktree exists: `git worktree list | grep "epic-<name>"` — if not: "❌ No worktree. Sync the epic first."
+5. Stack delivery only: the task directly below this one (by `position`) is `in-review` or `closed`, or this is the bottom layer. Otherwise: "❌ #<N> waits for layer #<below_N> to be submitted." Then put the worktree on this layer's branch:
+   ```bash
+   cd ../epic-<name>
+   git checkout epic/<name>/<N> 2>/dev/null || git checkout -b epic/<name>/<N> epic/<name>/<below_N>
+   ```
+   The bottom layer's branch already exists from the epic sync.
 
 ### Process
 
@@ -125,6 +131,7 @@ Task:
   subagent_type: "general-purpose"
   prompt: |
     You are working on Issue #<N> in the epic worktree at: ../epic-<name>/
+    Stack delivery only — your branch: epic/<name>/<N>. Never switch branches.
     
     Your stream: <stream_name>
     Your scope — files to modify: <file_patterns>
@@ -189,6 +196,8 @@ Monitor: check progress in .claude/epics/<epic>/updates/<N>/
 Sync updates: "sync issue <N>"
 ```
 
+With stack delivery, submit the task once every stream has completed (`sync.md` → Submitting a Task).
+
 ---
 
 ## Starting a Full Epic
@@ -212,11 +221,11 @@ Sync updates: "sync issue <N>"
 
 **Step 3 — Analyze any ready tasks** that don't have an analysis file yet (run issue analysis inline).
 
-**Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above.
+**Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above. With stack delivery, only one task is ready at a time: the lowest layer that is still `open`.
 
 **Step 5 — Create/update** `.claude/epics/<name>/execution-status.md` with all active agents and queued issues.
 
-**Step 6 — As agents complete**, check if blocked issues are now unblocked and launch those agents.
+**Step 6 — As agents complete**, check if blocked issues are now unblocked and launch those agents. With stack delivery, submit the finished task first; its submission unblocks the next layer.
 
 ---
 
@@ -227,7 +236,7 @@ When multiple agents work in the same worktree simultaneously:
 - Each agent works only on files in its assigned stream scope.
 - Agents commit frequently with `Issue #<N>: <description>` format.
 - Before modifying a shared file, check `git status <file>` — if another agent has it modified, wait and pull first.
-- Agents sync via commits: `git pull --rebase origin epic/<name>` before starting new file work.
+- Agents sync via commits: `git pull --rebase origin epic/<name>` before starting new file work. With stack delivery the layer branch exists only locally until it is submitted, so skip the pull.
 - Conflicts are never auto-resolved — agents report them and pause.
 - A stream is not complete until its own test cases pass and no previously passing test fails. Red tests from another active stream or open task are expected while that work is in progress; leave them alone. Never weaken or delete a test to make it pass.
 - No `--force` flags ever.

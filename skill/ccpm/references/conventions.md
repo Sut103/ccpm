@@ -51,6 +51,7 @@ updated: <ISO 8601>
 progress: 0%                # recalculated when tasks close
 prd: .claude/prds/<name>.md
 github: https://github.com/<owner>/<repo>/issues/<N>  # set on sync
+delivery: merge             # merge | stack (see Delivery Modes); missing means merge
 ---
 ```
 
@@ -58,13 +59,15 @@ github: https://github.com/<owner>/<repo>/issues/<N>  # set on sync
 ```yaml
 ---
 name: <Task Title>
-status: open | in-progress | closed
+status: open | in-progress | in-review | closed   # in-review: stack delivery only
 created: <ISO 8601>
 updated: <ISO 8601>
 github: https://github.com/<owner>/<repo>/issues/<N>  # set on sync
 depends_on: []              # issue numbers this must wait for
 parallel: true              # can run concurrently with non-conflicting tasks
 conflicts_with: []          # issue numbers that touch the same files
+position: 1                 # stack delivery only: layer in the stack, 1 = bottom (set by stack-plan.sh)
+pr: https://github.com/<owner>/<repo>/pull/<N>  # stack delivery only: set on submit
 ---
 ```
 
@@ -140,6 +143,8 @@ The closing gate (closing an issue) and the merging gate (merging an epic) both 
 
 For a task whose Test Cases are `N/A — <reason>`, only the second condition applies. If the gate does not pass, report what fails and why to the user; proceed only with their explicit approval.
 
+With stack delivery, the **layer gate** replaces the closing gate and there is no merging gate. It runs in the epic worktree on the task's layer branch, before the task is submitted, and passes when every `TC-<n>` of the task has a passing test (as above) and no other test fails except baseline failures. Tests of other open tasks are not exempt: tasks above this layer are not on its branch, and every task below it is already part of it.
+
 ### Exceptions
 
 TDD is the default, not an absolute.
@@ -207,9 +212,54 @@ grep 'github:' <file> | grep -oE '[0-9]+$'
 
 ---
 
+## Delivery Modes
+
+The epic's `delivery` field decides how finished work reaches main. It is chosen when the epic is created and does not change once the epic is synced.
+
+| | `merge` (default) | `stack` |
+|---|---|---|
+| Branches | One branch per epic: `epic/<name>` | One branch per task (layer): `epic/<name>/<N>`; no `epic/<name>` branch |
+| Pull requests | None; the epic branch is merged into main | One PR per task, chained into a single linear stack |
+| Task order | `depends_on`; `parallel` tasks run concurrently | Every task is one layer of one stack, in `position` order; tasks run one after another, streams inside a task still run in parallel |
+| Task done | Closed by "Closing an Issue" | `in-review` when its PR is submitted; the issue closes when the PR merges (`Closes #<N>`) |
+| Gate | Closing gate per task, merging gate per epic | Layer gate per task (see Test Gates) |
+| Epic end | `git merge --no-ff` into main | Confirm every task issue is closed, clean up, archive. CCPM never merges PRs |
+
+### Stack Layout
+
+- `bash references/scripts/stack-plan.sh <name>` prints the stack; `--write` stores each task's `position`; `--check` fails when stored positions do not match the plan.
+- Order: tasks that have a `position` keep it; the others go on top in `depends_on` order, lowest task number first. A cycle, or a dependency that is not below the task depending on it, is an error.
+- `parallel` and `conflicts_with` do not affect the order: all layers are sequential.
+- A task can start when the task directly below it is `in-review` or `closed`. The bottom layer can start at once.
+- Layer `<N>` lives on branch `epic/<name>/<N>`. Its PR base is the branch of the layer below, or main for the bottom layer.
+
+### Pull Request Operations
+
+Use `gh` or the GitHub MCP server, whichever the harness has. Git itself is always required for branches, rebases and pushes.
+
+| Operation | gh | GitHub MCP |
+|---|---|---|
+| Create a PR / change its base | `gh pr create --base <base> --head <branch>` / `gh pr edit <N> --base <base>` | `create_pull_request` / `update_pull_request` |
+| Link PRs into a GitHub stack | `gh stack link <branches...>` (gh-stack extension) or `gh api -X POST repos/<owner>/<repo>/stacks -H "X-GitHub-Api-Version: 2026-03-10" -F "pull_requests[]=<N1>" -F "pull_requests[]=<N2>" ...` (bottom to top) | No tool: leave the PRs unlinked |
+| Read an issue's state | `gh issue view <N> --json state` | `issue_read` |
+| Read a PR's state | `gh pr view <N> --json state` | `pull_request_read` |
+
+Linking is optional. Unlinked PRs whose bases form the chain still show each layer's own diff; only GitHub's stack features (stack view, merging several layers at once, rebasing upper layers after a merge) are missing.
+
+### Changing a Lower Layer
+
+When a submitted layer needs a change (a bug found while building a layer above it, or feedback on its PR):
+
+1. Commit the fix on that layer's branch, test-first as usual.
+2. Rebase the layers above onto it: `git rebase --update-refs <fixed-branch> <top-branch>` (Git 2.38+; it also moves the layer branches in between), or `gh stack rebase --upstack` with the gh-stack extension.
+3. Run the layer gate on every layer above the fixed one.
+4. Push each rewritten branch with `git push --force-with-lease origin <branch>`.
+
+---
+
 ## Git / Worktree Conventions
 
-- One branch per epic: `epic/<name>`
+- One branch per epic: `epic/<name>` (stack delivery: one branch per layer, see Delivery Modes)
 - Worktrees live at `../epic-<name>/` (sibling to project root)
 - Always start branches from an up-to-date main:
   ```bash
@@ -217,7 +267,7 @@ grep 'github:' <file> | grep -oE '[0-9]+$'
   git worktree add ../epic-<name> -b epic/<name>
   ```
 - Commit format inside epics: `Issue #<N>: <description>`
-- Never use `--force` in any git operation
+- Never use `--force` in any git operation. The exceptions, with stack delivery and only on the epic's own layer branches: `git push --force-with-lease` after a rebase (see Changing a Lower Layer), and `git branch -D` once the layer's PR has merged (see `sync.md` → Merging an Epic)
 
 ---
 

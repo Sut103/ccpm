@@ -91,6 +91,7 @@ created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 progress: 0%
 prd: .claude/prds/<name>.md
 github: (will be set on sync)
+delivery: merge
 ---
 
 # Epic: <feature-name>
@@ -125,6 +126,10 @@ github: (will be set on sync)
 ```
 
 Choose the lowest level that can prove the criterion; use e2e only for flows that span the whole stack.
+
+**Delivery**: ask the user how the finished work should reach main, and set `delivery` accordingly (see `conventions.md` → Delivery Modes):
+- `merge` (default): the epic branch is merged into main when all tasks are done.
+- `stack`: each task is submitted as its own pull request, and all of them form one linear stack. Tasks then run one after another (streams inside a task still run in parallel). Needs a GitHub repository and either `gh` or the GitHub MCP server.
 
 In `## Task Breakdown Preview`, list the `TS-<n>` IDs each task is planned to cover. This is a plan for decomposition and is not maintained afterwards; once tasks exist, the `Covers` column of each task's `## Test Cases` is the record.
 

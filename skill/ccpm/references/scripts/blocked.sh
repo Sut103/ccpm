@@ -7,52 +7,68 @@ echo "🚫 Blocked Tasks"
 echo "================"
 echo ""
 
+# Value of a frontmatter field (body lines are ignored)
+fm_get() {
+  awk -v k="$1" '
+    NR==1 && /^---$/ {fm=1; next}
+    fm && /^---$/    {exit}
+    fm && index($0, k":")==1 {sub("^" k ": *", ""); print; exit}' "$2"
+}
+
+# What a task still waits for, as "#N (status)" words; empty when it can start.
+# merge delivery: every depends_on task is closed.
+# stack delivery: the layer directly below is in-review or closed.
+unmet_deps() {
+  local task_file="$1" epic_dir dep dep_file dep_status pos f
+  epic_dir=$(dirname "$task_file")
+  if [ "$(fm_get delivery "$epic_dir/epic.md")" = "stack" ]; then
+    pos=$(fm_get position "$task_file")
+    if [ -z "$pos" ]; then echo "(position unset: run stack-plan.sh)"; return; fi
+    [ "$pos" -le 1 ] && return
+    for f in "$epic_dir"/[0-9]*.md; do
+      [ "$(fm_get position "$f")" = "$((pos - 1))" ] || continue
+      dep_status=$(fm_get status "$f")
+      case "$dep_status" in in-review|closed) ;; *) echo "#$(basename "$f" .md) (${dep_status:-open})" ;; esac
+      return
+    done
+    echo "(layer $((pos - 1)) missing)"
+  else
+    for dep in $(fm_get depends_on "$task_file" | tr -d '[],'); do
+      dep_file="$epic_dir/$dep.md"
+      if [ ! -f "$dep_file" ]; then echo "#$dep (missing)"; continue; fi
+      dep_status=$(fm_get status "$dep_file")
+      [ "$dep_status" = "closed" ] || echo "#$dep (${dep_status:-open})"
+    done
+  fi
+}
+
 found=0
 
 for epic_dir in .claude/epics/*/; do
   [ -d "$epic_dir" ] || continue
   epic_name=$(basename "$epic_dir")
 
-  for task_file in "$epic_dir"/[0-9]*.md; do
+  for task_file in "$epic_dir"[0-9]*.md; do
     [ -f "$task_file" ] || continue
+    case "$(basename "$task_file" .md)" in *[!0-9]*) continue ;; esac
 
     # Check if task is open
-    status=$(grep "^status:" "$task_file" | head -1 | sed 's/^status: *//')
+    status=$(fm_get status "$task_file")
     if [ "$status" != "open" ] && [ -n "$status" ]; then
       continue
     fi
 
-    # Check for dependencies
-    deps_line=$(grep "^depends_on:" "$task_file" | head -1)
-    if [ -n "$deps_line" ]; then
-      deps=$(echo "$deps_line" | sed 's/^depends_on: *//' | sed 's/^\[//' | sed 's/\]$//' | sed 's/,/ /g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-      [ -z "$deps" ] && deps=""
-    else
-      deps=""
-    fi
+    waiting=$(unmet_deps "$task_file" | tr '\n' ' ' | sed 's/ *$//')
+    [ -n "$waiting" ] || continue
 
-    if [ -n "$deps" ] && [ "$deps" != "depends_on:" ]; then
-      task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
-      task_num=$(basename "$task_file" .md)
+    task_name=$(fm_get name "$task_file")
+    task_num=$(basename "$task_file" .md)
 
-      echo "⏸️ Task #$task_num - $task_name"
-      echo "   Epic: $epic_name"
-      echo "   Blocked by: [$deps]"
-
-      # Check status of dependencies
-      open_deps=""
-      for dep in $deps; do
-        dep_file="$epic_dir$dep.md"
-        if [ -f "$dep_file" ]; then
-          dep_status=$(grep "^status:" "$dep_file" | head -1 | sed 's/^status: *//')
-          [ "$dep_status" = "open" ] && open_deps="$open_deps #$dep"
-        fi
-      done
-
-      [ -n "$open_deps" ] && echo "   Waiting for:$open_deps"
-      echo ""
-      ((found++))
-    fi
+    echo "⏸️ Task #$task_num - $task_name"
+    echo "   Epic: $epic_name"
+    echo "   Waiting for: $waiting"
+    echo ""
+    ((found++))
   done
 done
 
