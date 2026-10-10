@@ -63,79 +63,79 @@ else
   gh extension install yahsan2/gh-sub-issue
 fi
 
-# ディレクトリ構成の作成
+# directory 構成の作成
 echo ""
-echo "📁 ディレクトリ構成を作成中..."
+echo "📁 directory 構成を作成中..."
 mkdir -p .claude/prds
 mkdir -p .claude/epics
 mkdir -p .claude/rules
 mkdir -p .claude/agents
 mkdir -p .claude/scripts/pm
-echo "  ✅ ディレクトリ作成完了"
+echo "  ✅ directory 作成完了"
 
-# main リポジトリ内であればスクリプトを複製
+# main repository 内であれば script を複製
 if [ -d "scripts/pm" ] && [ ! "$(pwd)" = *"/.claude"* ]; then
   echo ""
-  echo "📝 PM スクリプトを複製中..."
+  echo "📝 PM script を複製中..."
   cp -r scripts/pm/* .claude/scripts/pm/
   chmod +x .claude/scripts/pm/*.sh
-  echo "  ✅ スクリプトの複製と実行権限付与完了"
+  echo "  ✅ script の複製と実行権限付与完了"
 fi
 
 # git の確認
 echo ""
 echo "🔗 Git 設定を確認中..."
 if git rev-parse --git-dir > /dev/null 2>&1; then
-  echo "  ✅ Git リポジトリを検出"
+  echo "  ✅ Git repository を検出"
 
   # remote の確認
   if git remote -v | grep -q origin; then
     remote_url=$(git remote get-url origin)
     echo "  ✅ remote 設定済み: $remote_url"
     
-    # remote が CCPM テンプレートリポジトリか確認
+    # remote が CCPM template repository か確認
     if [[ "$remote_url" == *"automazeio/ccpm"* ]] || [[ "$remote_url" == *"automazeio/ccpm.git"* ]]; then
       echo ""
-      echo "  ⚠️ 警告: remote origin が CCPM テンプレートリポジトリを指定"
-      echo "  このままでは作成する Issue が自プロジェクトではなくテンプレートリポジトリへ登録。"
+      echo "  ⚠️ 警告: remote origin が CCPM template repository を指定"
+      echo "  このままでは作成する Issue が自プロジェクトではなく template repository へ登録。"
       echo ""
       echo "  修正手順:"
-      echo "  1. リポジトリを fork、または GitHub 上に独自リポジトリを作成"
+      echo "  1. repository を fork、または GitHub 上に独自 repository を作成"
       echo "  2. remote を更新:"
       echo "     git remote set-url origin https://github.com/YOUR_USERNAME/YOUR_REPO.git"
       echo ""
     else
-      # GitHub リポジトリであれば GitHub ラベルを作成
+      # GitHub repository であれば GitHub label を作成
       if gh repo view &> /dev/null; then
         echo ""
-        echo "🏷️ GitHub ラベルを作成中..."
+        echo "🏷️ GitHub label を作成中..."
         
-        # エラー処理を強化した基本ラベルの作成
+        # エラー処理を強化した基本 label の作成
         epic_created=false
         task_created=false
         
         if gh label create "epic" --color "0E8A16" --description "Epic issue containing multiple related tasks" --force 2>/dev/null; then
           epic_created=true
         elif gh label list 2>/dev/null | grep -q "^epic"; then
-          epic_created=true  # ラベル既存
+          epic_created=true  # label 既存
         fi
         
         if gh label create "task" --color "1D76DB" --description "Individual task within an epic" --force 2>/dev/null; then
           task_created=true
         elif gh label list 2>/dev/null | grep -q "^task"; then
-          task_created=true  # ラベル既存
+          task_created=true  # label 既存
         fi
         
         # 結果の報告
         if $epic_created && $task_created; then
-          echo "  ✅ GitHub ラベル作成完了 (epic, task)"
+          echo "  ✅ GitHub label 作成完了 (epic, task)"
         elif $epic_created || $task_created; then
-          echo "  ⚠️ GitHub ラベルを一部のみ作成 (epic: $epic_created, task: $task_created)"
+          echo "  ⚠️ GitHub label を一部のみ作成 (epic: $epic_created, task: $task_created)"
         else
-          echo "  ❌ GitHub ラベル作成失敗 (リポジトリ権限を確認)"
+          echo "  ❌ GitHub label 作成失敗 (repository 権限を確認)"
         fi
       else
-        echo "  ℹ️ GitHub リポジトリではないため、ラベル作成を省略"
+        echo "  ℹ️ GitHub repository ではないため、label 作成を省略"
       fi
     fi
   else
@@ -143,7 +143,7 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
     echo "  追加: git remote add origin <url>"
   fi
 else
-  echo "  ⚠️ git リポジトリではない"
+  echo "  ⚠️ git repository ではない"
   echo "  初期化: git init"
 fi
 

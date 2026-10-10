@@ -35,7 +35,7 @@ if [ -d ".claude/epics" ]; then
   closed=$(find .claude/epics -path "*/archived/*" -prune -o -name "[0-9]*.md" -print 2>/dev/null | xargs grep -l "^status: *closed" 2>/dev/null | wc -l)
   echo "  未着手: $open"
   echo "  レビュー中: $in_review"
-  echo "  クローズ済み: $closed"
+  echo "  close 済み: $closed"
   echo "  総数: $total"
 else
   echo "  Task 不在"

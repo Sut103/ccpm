@@ -10,7 +10,7 @@
 
 ### Preflight
 - `.claude/prds/<name>.md` の既存有無を確認。既存の場合、続行前に上書きの可否を確認。
-- `.claude/prds/` ディレクトリの存在を確認。不在の場合は作成。
+- `.claude/prds/` directory の存在を確認。不在の場合は作成。
 - 機能名は kebab-case (小文字、英字・数字・ハイフンのみ、先頭は英字) 必須。違反時: 「❌ 機能名は kebab-case 必須。例: user-auth, payment-v2」
 
 ### Process
@@ -57,10 +57,10 @@ created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 - AC-2 (US-1): Given <context>, when <invalid action>, then <error the user sees>
 ```
 
-ユーザー視点で記述し、実装詳細 (クラス名、テーブル、エンドポイント) は含めない。
+ユーザー視点で記述し、実装詳細 (クラス名、テーブル、endpoint) は含めない。
 
 **保存前の品質基準:**
-- 全セクションにプレースホルダー文字列なし
+- 全セクションに placeholder 文字列なし
 - 全 User Story に ID (`US-<n>`) と一つ以上の Acceptance Criterion (`AC-<n>`) あり
 - Acceptance Criteria は Given/When/Then 形式、システム外部から観測可能、実装詳細なし
 - 検証必須の非機能要件 (性能、セキュリティ、上限) も Acceptance Criteria として記述
@@ -114,7 +114,7 @@ delivery: merge
 
 **Test Strategy** では、PRD の各 Acceptance Criterion を Test Scenario へ詳細化。
 
-- `### Test Levels & Tooling` — Test フレームワーク、全テストスイートの実行コマンド、Test の配置場所。プロジェクトの既存資産 (`package.json` の scripts、`pytest.ini`、`go test`、`Cargo.toml` 等) を検出・再利用。テストスイートを一度実行し、既に失敗している Test を既知の失敗 (baseline failure) として列挙。Test 基盤が未整備の場合は導入を提案し、導入用の Setup Task を計画。他の全 Task は当該 Task に依存。
+- `### Test Levels & Tooling` — Test framework、全 test suite の実行コマンド、Test の配置場所。プロジェクトの既存資産 (`package.json` の scripts、`pytest.ini`、`go test`、`Cargo.toml` 等) を検出・再利用。test suite を一度実行し、既に失敗している Test を baseline failure として列挙。Test 基盤が未整備の場合は導入を提案し、導入用の Setup Task を計画。他の全 Task は当該 Task に依存。
 - `### Acceptance Test Matrix` — Scenario ごとに一行:
 
 ```markdown
@@ -128,8 +128,8 @@ delivery: merge
 Criterion を証明可能な最低水準を選択。e2e は全層にわたるフローに限定。
 
 **Delivery**: 完了した作業の main への反映方法をユーザーに確認し、`delivery` を設定 (`conventions.md` → Delivery Modes 参照)。
-- `merge` (既定): 全 Task 完了時に Epic ブランチを main へマージ。
-- `stack`: 各 Task を個別の Pull Request として Submit し、全体で単一の直線的 stack を構成。Task は逐次実行 (Task 内の Stream は引き続き並列実行)。GitHub リポジトリと、`gh` または GitHub MCP サーバーが必要。
+- `merge` (既定): 全 Task 完了時に Epic branch を main へ merge。
+- `stack`: 各 Task を個別の Pull Request として Submit し、全体で単一の直線的 stack を構成。Task は逐次実行 (Task 内の Stream は引き続き並列実行)。GitHub repository と、`gh` または GitHub MCP サーバーが必要。
 
 `## Task Breakdown Preview` には、各 Task が担う予定の `TS-<n>` ID を列挙。分解用の計画であり、以後の保守は不要。Task 作成後は、各 Task の `## Test Cases` の `Covers` 列が記録の正本。
 
@@ -145,6 +145,6 @@ Criterion を証明可能な最低水準を選択。e2e は全層にわたるフ
 
 ## Editing a PRD or Epic
 
-先にファイルを読み、Frontmatter を全て保持したまま対象箇所のみ編集。Frontmatter の `updated` フィールドを現在日時へ更新。
+先にファイルを読み、Frontmatter を全て保持したまま対象箇所のみ編集。Frontmatter の `updated` field を現在日時へ更新。
 
 Acceptance Criteria、Scenario、Test Case の変更時は、`conventions.md` → Changing Test Cases に従い更新対象の階層を判断。

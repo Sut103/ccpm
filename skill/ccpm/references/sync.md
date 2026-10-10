@@ -1,6 +1,6 @@
 # Sync — Push to GitHub & Track Progress
 
-本 Phase では、ローカルの Epic・Task の GitHub Issue としての反映、進捗のコメントとしての Sync、作業完了時の Issue のクローズを扱う。
+本 Phase では、ローカルの Epic・Task の GitHub Issue としての反映、進捗のコメントとしての Sync、作業完了時の Issue の close を扱う。
 
 ---
 
@@ -11,7 +11,7 @@
 ```bash
 remote_url=$(git remote get-url origin 2>/dev/null || echo "")
 if [[ "$remote_url" == *"automazeio/ccpm"* ]]; then
-  echo "❌ CCPM テンプレートリポジトリへの Sync は不可。"
+  echo "❌ CCPM template repository への Sync は不可。"
   echo "remote を更新: git remote set-url origin https://github.com/YOUR/REPO.git"
   exit 1
 fi
@@ -82,7 +82,7 @@ mv 001.md <new_num>.md
 **Step 4 — Frontmatter の更新:**
 ```bash
 current_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-# epic.md と各 Task ファイルの github: と updated: フィールドを更新
+# epic.md と各 Task ファイルの github: と updated: field を更新
 github_url="https://github.com/$REPO/issues/<number>"
 # 変更対象は Frontmatter 内の行のみ (conventions.md 参照)
 set_fm() {
@@ -102,7 +102,7 @@ git checkout main && git pull origin main
 git worktree add ../epic-<name> -b epic/<name>
 ```
 
-stack delivery では `epic/<name>` ブランチは不在。改名後も Layer 順序が成立することを確認 (`bash references/scripts/stack-plan.sh <name> --check`) し、最下層のブランチ上に Worktree を作成:
+stack delivery では `epic/<name>` branch は不在。改名後も Layer 順序が成立することを確認 (`bash references/scripts/stack-plan.sh <name> --check`) し、最下層の branch 上に Worktree を作成:
 ```bash
 git worktree add ../epic-<name> -b epic/<name>/<bottom_N> main
 ```
@@ -173,16 +173,16 @@ gh issue comment <N> --body-file /tmp/update-comment.md
 
 **起動条件**: `delivery: stack` の Epic の Task が完了。例: 「Issue N を Submit」「Issue N の PR を作成」、または全 Stream の完了。
 
-stack delivery では「Closing an Issue」を本手順が代替。CCPM は Layer を Submit し、PR のマージ時に Issue がクローズ。
+stack delivery では「Closing an Issue」を本手順が代替。CCPM は Layer を Submit し、PR の merge 時に Issue が close。
 
 ### Preflight
 - 当該 Task が次に Submit すべき Layer であること: 直下の Task (`position` 基準) が `in-review` または `closed`。
-- `../epic-<name>/` の Task ブランチ `epic/<name>/<N>` 上で、`conventions.md` → Test Gates の Layer Gate を実行。不通過の場合: 「❌ #<N> の Submit 不可: <failing or missing test cases>。」 ユーザーの明示的な承認を得た場合に限り続行。
-- Worktree に未コミットの変更なし。
+- `../epic-<name>/` の Task branch `epic/<name>/<N>` 上で、`conventions.md` → Test Gates の Layer Gate を実行。不通過の場合: 「❌ #<N> の Submit 不可: <failing or missing test cases>。」 ユーザーの明示的な承認を得た場合に限り続行。
+- Worktree に未 commit の変更なし。
 
 ### Process
 
-1. Layer ブランチを push: `git push -u origin epic/<name>/<N>`
+1. Layer branch を push: `git push -u origin epic/<name>/<N>`
 2. PR 本文を `/tmp/pr-body.md` に記述:
 ```markdown
 Closes #<N>
@@ -203,12 +203,12 @@ Layer <position> of <total> in epic #<epic_N>
 
 Suggested merge method: squash (keeps the Red commits out of main's history)
 ```
-3. PR を作成 (`conventions.md` → Pull Request Operations 参照)。base は直下 Layer のブランチ、最下層の場合は `main`:
+3. PR を作成 (`conventions.md` → Pull Request Operations 参照)。base は直下 Layer の branch、最下層の場合は `main`:
 ```bash
 pr_url=$(gh pr create --repo "$REPO" --base <base_branch> --head epic/<name>/<N> \
   --title "<task_name>" --body-file /tmp/pr-body.md)
 ```
-4. 第二 Layer 以降は、可能な限り stack を連結: Submit 済み全 Layer のブランチを下層から上層の順に指定して `gh stack link` を再実行、または stacks REST エンドポイントを使用 (最初の二つの PR から stack を作成し、以降の各 PR について `POST repos/<owner>/<repo>/stacks/<stack_number>/add`)。いずれも利用不可の場合、PR は未連結のまま。
+4. 第二 Layer 以降は、可能な限り stack を連結: Submit 済み全 Layer の branch を下層から上層の順に指定して `gh stack link` を再実行、または stacks REST endpoint を使用 (最初の二つの PR から stack を作成し、以降の各 PR について `POST repos/<owner>/<repo>/stacks/<stack_number>/add`)。いずれも利用不可の場合、PR は未連結のまま。
 5. Task ファイルに `status: in-review`、`pr: <pr_url>`、`updated: <now>` を設定。
 6. Epic Issue の当該 Task 行に PR を追記:
 ```bash
@@ -232,7 +232,7 @@ Submit 済み Layer に追加の変更が必要な場合、`conventions.md` → 
 **起動条件**: ユーザーが Task を完了と判定。merge delivery 専用。stack delivery の場合は Submitting a Task 参照。
 
 ### Preflight
-- Epic Worktree (`../epic-<name>/`) で `conventions.md` → Test Gates の Closing Gate を実行。不通過の場合: 「❌ #<N> のクローズ不可: <failing or missing test cases>。」 ユーザーの明示的な承認を得た場合に限り続行。
+- Epic Worktree (`../epic-<name>/`) で `conventions.md` → Test Gates の Closing Gate を実行。不通過の場合: 「❌ #<N> の close 不可: <failing or missing test cases>。」 ユーザーの明示的な承認を得た場合に限り続行。
 
 ### Process
 
@@ -242,7 +242,7 @@ Submit 済み Layer に追加の変更が必要な場合、`conventions.md` → 
 ```bash
 echo "✅ Task 完了 — 全 Acceptance Criteria 充足、全 Test Case 通過。" | gh issue comment <N> --body-file -
 # Closing Gate をユーザー承認により通過した場合は次を投稿:
-# "✅ ユーザー承認により Task をクローズ — 未通過: <failing or missing test cases>"
+# "✅ ユーザー承認により Task を close — 未通過: <failing or missing test cases>"
 gh issue close <N>
 ```
 4. Epic Issue 本文の当該 Task にチェックを付与:
@@ -257,16 +257,16 @@ gh issue edit <epic_N> --body-file /tmp/epic-body.md
 
 ## Merging an Epic
 
-**起動条件**: 完了した Epic の main へのマージをユーザーが要望。
+**起動条件**: 完了した Epic の main への merge をユーザーが要望。
 
-stack delivery では CCPM はマージしない。全 Task の PR のマージをもって Epic 完了。下記 Process の代わりに次を実施:
-1. 各 Task Issue と各 Task PR の状態を取得 (`conventions.md` → Pull Request Operations 参照)。open の Issue またはマージ未完了の PR がある場合、一覧を提示して中断。
+stack delivery では CCPM は merge しない。全 Task の PR の merge をもって Epic 完了。下記 Process の代わりに次を実施:
+1. 各 Task Issue と各 Task PR の状態を取得 (`conventions.md` → Pull Request Operations 参照)。open の Issue または merge 未完了の PR がある場合、一覧を提示して中断。
 2. 全 Task を `status: closed` に設定し、Epic Issue 本文でチェックを付与、Epic を `progress: 100%` に設定。
-3. 後始末とアーカイブ:
+3. 後始末と archive:
 ```bash
 git worktree remove ../epic-<name>
 for b in $(git branch --list "epic/<name>/*" --format='%(refname:short)'); do
-  git branch -D "$b"                          # PR はマージ済み (手順 1)。squash マージでは git 上は未マージ扱いのため -D
+  git branch -D "$b"                          # PR は merge 済み (手順 1)。squash merge では git 上は未 merge 扱いのため -D
   git push origin --delete "$b" 2>/dev/null   # GitHub 側で削除済みの可能性あり
 done
 mkdir -p .claude/epics/archived/
@@ -279,18 +279,18 @@ merge delivery の場合:
 
 ### Preflight
 - Worktree `../epic-<name>` の存在を確認。
-- Worktree 内の未コミットの変更を確認。変更が残存する場合は中断。
+- Worktree 内の未 commit の変更を確認。変更が残存する場合は中断。
 - 未完了の Task Issue が残存する場合は警告。
-- Worktree で `conventions.md` → Test Gates の Merging Gate を実行。不通過の場合、ユーザーの明示的な承認がない限りマージを中断。
+- Worktree で `conventions.md` → Test Gates の Merging Gate を実行。不通過の場合、ユーザーの明示的な承認がない限り merge を中断。
 
 ### Process
 
 ```bash
-# Worktree で: 全テストスイートを実行 (Epic の Test Strategy 記載のコマンド)
+# Worktree で: 全 test suite を実行 (Epic の Test Strategy 記載のコマンド)
 cd ../epic-<name>
 # 例: npm test / pytest / cargo test / go test — Gate 不通過かつユーザー未承認の場合はここで中断
 
-# main リポジトリで:
+# main repository で:
 git checkout main && git pull origin main
 git merge epic/<name> --no-ff -m "Merge epic: <name>"
 git push origin main
@@ -300,11 +300,11 @@ git worktree remove ../epic-<name>
 git branch -d epic/<name>
 git push origin --delete epic/<name>
 
-# アーカイブ
+# archive
 mkdir -p .claude/epics/archived/
 mv .claude/epics/<name> .claude/epics/archived/
 
-# GitHub Issue のクローズ
+# GitHub Issue の close
 epic_issue=$(grep 'github:' .claude/epics/archived/<name>/epic.md | grep -oE '[0-9]+$')
 gh issue close $epic_issue -c "Epic completed and merged to main"
 ```
@@ -329,7 +329,7 @@ gh issue view <original_N> --json title,body,labels
 
 **Step 2 — ローカルのバグ Task ファイルの作成:**
 
-修正は Test 先行。TC-1 はバグを再現する回帰 Test。修正前に作成して失敗を確認 (Red) し、修正によって通過させる (Green)。
+修正は Test 先行。TC-1 はバグを再現する regression test。修正前に作成して失敗を確認 (Red) し、修正によって通過させる (Green)。
 
 ```markdown
 ---
@@ -365,7 +365,7 @@ Found while working on / testing issue #<original_N>: <original title>
 | TC-1 | Regression #<original_N> | unit/integration/e2e | Given <state from Steps to Reproduce>, when <action>, then <expected behavior> | <path/to/test_file> |
 
 ## Acceptance Criteria
-- [ ] 回帰 Test TC-1 がバグを再現し、修正前に失敗
+- [ ] regression test TC-1 がバグを再現し、修正前に失敗
 - [ ] バグ修正済み — TC-1 が通過
 - [ ] 元 Issue #<original_N> の振る舞いに影響なし — その Test Case が引き続き通過
 

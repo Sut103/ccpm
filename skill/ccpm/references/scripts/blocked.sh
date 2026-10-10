@@ -7,7 +7,7 @@ echo "🚫 阻害中の Task"
 echo "================"
 echo ""
 
-# Frontmatter フィールドの値 (本文の行は無視)
+# Frontmatter field の値 (本文の行は無視)
 fm_get() {
   awk -v k="$1" '
     NR==1 && /^---$/ {fm=1; next}

@@ -1,14 +1,14 @@
 # Track — 現況把握
 
-追跡操作は、速度と一貫性のため bash スクリプトを直接使用。LLM による処理は不要で、スクリプトを実行して出力を提示するのみ。
+追跡操作は、速度と一貫性のため bash script を直接使用。LLM による処理は不要で、script を実行して出力を提示するのみ。
 
 ---
 
 ## Script-First Rule
 
-全追跡操作に対応する bash スクリプトあり。スクリプトを実行し、出力を手作業で再構成しない。
+全追跡操作に対応する bash script あり。script を実行し、出力を手作業で再構成しない。
 
-スクリプトは本スキル内の `references/scripts/` に配置。ただし実行は **プロジェクトルート** (`.claude/` の所在地) から行う。実行方法:
+script は本スキル内の `references/scripts/` に配置。ただし実行は **project root** (`.claude/` の所在地) から行う。実行方法:
 
 ```bash
 bash <skill_path>/references/scripts/<script>.sh [args]
@@ -161,15 +161,15 @@ bash references/scripts/validate.sh
 bash references/scripts/stack-plan.sh <name>
 ```
 
-stack delivery の Epic 専用。各 Task の Layer、ブランチ、PR の base を表示。`--write` で position を保存、`--check` で検証。
+stack delivery の Epic 専用。各 Task の Layer、branch、PR の base を表示。`--write` で position を保存、`--check` で検証。
 
 ---
 
-## スクリプト失敗時
+## When Scripts Fail
 
-スクリプトの失敗時、または出力に解釈が必要な場合 (出力中のエラー、ユーザーからの「これは何を意味するか」等の質問) に限り、説明を補足。ただし必ず先にスクリプトを実行し、status や standup の出力を推測で作成しない。
+script の失敗時、または出力に解釈が必要な場合 (出力中のエラー、ユーザーからの「これは何を意味するか」等の質問) に限り、説明を補足。ただし必ず先に script を実行し、status や standup の出力を推測で作成しない。
 
-`.claude/` ディレクトリ自体が不在の場合、プロジェクトは未初期化。次の実行をユーザーへ案内:
+`.claude/` directory 自体が不在の場合、プロジェクトは未初期化。次の実行をユーザーへ案内:
 ```bash
 bash references/scripts/init.sh
 ```

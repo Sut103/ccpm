@@ -1,6 +1,6 @@
 #!/bin/bash
 # stack delivery の Epic の Layer 順序を算出: 全 Task が単一の直線的 stack の一 Layer となる。
-# position を持つ Task はその値を維持し、持たない Task は depends_on のトポロジカル順
+# position を持つ Task はその値を維持し、持たない Task は depends_on の topological 順
 # (Task 番号の小さい順) で上に追加。
 #
 # Usage: stack-plan.sh <epic-name> [--write | --check]
@@ -25,7 +25,7 @@ if [ ! -f "$epic_file" ]; then
   exit 1
 fi
 
-# Frontmatter フィールドの値 (本文の行は無視)
+# Frontmatter field の値 (本文の行は無視)
 fm_get() {
   awk -v k="$1" '
     NR==1 && /^---$/ {fm=1; next}
@@ -33,7 +33,7 @@ fm_get() {
     fm && index($0, k":")==1 {sub("^" k ": *", ""); print; exit}' "$2"
 }
 
-# Frontmatter フィールドを設定。不在の場合は閉じの --- の直前に追加
+# Frontmatter field を設定。不在の場合は閉じの --- の直前に追加
 fm_set() {
   awk -v k="$1" -v v="$2" '
     NR==1 && /^---$/ {fm=1; print; next}

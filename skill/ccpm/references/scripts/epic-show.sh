@@ -30,13 +30,13 @@ echo "📚 Epic: $epic_name"
 echo "================================"
 echo ""
 
-# メタデータの抽出
+# metadata の抽出
 status=$(grep "^status:" "$epic_file" | head -1 | sed 's/^status: *//')
 progress=$(grep "^progress:" "$epic_file" | head -1 | sed 's/^progress: *//')
 github=$(grep "^github:" "$epic_file" | head -1 | sed 's/^github: *//')
 created=$(grep "^created:" "$epic_file" | head -1 | sed 's/^created: *//')
 
-echo "📊 メタデータ:"
+echo "📊 metadata:"
 echo "  状態: ${status:-planning}"
 echo "  進捗: ${progress:-0%}"
 [ -n "$github" ] && echo "  GitHub: $github"
@@ -81,7 +81,7 @@ echo ""
 echo "📈 統計:"
 echo "  Task 総数: $task_count"
 echo "  未完了: $open_count"
-echo "  クローズ済み: $closed_count"
+echo "  close 済み: $closed_count"
 [ $task_count -gt 0 ] && echo "  完了率: $((closed_count * 100 / task_count))%"
 
 # 次の操作

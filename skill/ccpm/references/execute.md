@@ -23,13 +23,13 @@ Issue 詳細を取得: `gh issue view <N> --json title,body,labels`
 - 各 Stream の振る舞いが担う Task ファイル内の Test Case (`TC-<n>`)
 
 **代表的な Stream 構成:**
-- Database Layer: スキーマ、マイグレーション、モデル
-- Service Layer: 業務ロジック、データアクセス
-- API Layer: エンドポイント、入力検証、ミドルウェア
-- UI Layer: コンポーネント、ページ、スタイル
+- Database Layer: schema、migration、model
+- Service Layer: business logic、data access
+- API Layer: endpoint、validation、middleware
+- UI Layer: component、ページ、スタイル
 
 Test 専用の Stream は設けない。各 Stream が自身の構築する振る舞いの Test Case を担い、先行作成する (`conventions.md` → TDD & Test Traceability 参照)。Task ファイル内の全 `TC-<n>` を、それぞれ厳密に一つの Stream へ割当:
-- 複数 Stream の成果を要する Test Case は、依存連鎖で最後に完了する Stream へ割当。先行 Stream へ割当すると、後続 Stream の完了まで当該 Test を通過できず、デッドロックが発生。
+- 複数 Stream の成果を要する Test Case は、依存連鎖で最後に完了する Stream へ割当。先行 Stream へ割り当てた場合、後続 Stream の完了まで当該 Test を通過できず、deadlock が発生。
 - 振る舞いを追加する Stream は、全て一つ以上の Test Case を担う。先行 Stream に Test Case が残らない場合、その担当部分の unit 水準の Test Case を Task の `## Test Cases` へ追加 (Task のみの変更。`conventions.md` → Changing Test Cases 参照) するか、当該 Stream を Test Case を担う Stream へ統合。観測可能な振る舞いを追加しない Stream は、代わりに `N/A — <reason>` と記載 (`conventions.md` → 例外 参照)。
 - Test ファイルを共有する Test Case は同一 Stream へ割当。そうでなければファイルを分割。各 Stream の Test ファイルを **Files** に列挙。
 - 共有の Test fixture や helper は後述の共有ファイル規則に従い、指定の一 Stream が担う。
@@ -93,12 +93,12 @@ parallelization_factor: <1.0-5.0>
 2. ローカルの Task ファイルを特定 (前述と同様)。
 3. 分析ファイル `.claude/epics/*/<N>-analysis.md` の有無を確認。不在の場合は先に分析を実施 (または分析と開始を連続実行)。
 4. Epic Worktree の存在を確認: `git worktree list | grep "epic-<name>"`。不在の場合: 「❌ Worktree なし。先に Epic を Sync。」
-5. stack delivery 専用: 直下の Task (`position` 基準) が `in-review` または `closed`、もしくは当該 Task が最下層であること。それ以外の場合: 「❌ #<N> は Layer #<below_N> の Submit 待ち。」 条件を満たす場合、Worktree を当該 Layer のブランチへ切替:
+5. stack delivery 専用: 直下の Task (`position` 基準) が `in-review` または `closed`、もしくは当該 Task が最下層であること。それ以外の場合: 「❌ #<N> は Layer #<below_N> の Submit 待ち。」 条件を満たす場合、Worktree を当該 Layer の branch へ切替:
    ```bash
    cd ../epic-<name>
    git checkout epic/<name>/<N> 2>/dev/null || git checkout -b epic/<name>/<N> epic/<name>/<below_N>
    ```
-   最下層のブランチは Epic の Sync 時に作成済み。
+   最下層の branch は Epic の Sync 時に作成済み。
 
 ### Process
 
@@ -131,7 +131,7 @@ Task:
   subagent_type: "general-purpose"
   prompt: |
     担当: Issue #<N>。作業場所は Epic Worktree ../epic-<name>/
-    stack delivery 専用 — 担当ブランチ: epic/<name>/<N>。ブランチ切替は厳禁。
+    stack delivery 専用 — 担当 branch: epic/<name>/<N>。branch 切替は厳禁。
     
     担当 Stream: <stream_name>
     担当範囲 — 変更対象ファイル: <file_patterns>
@@ -144,18 +144,18 @@ Task:
     3. TDD 規則を読込: <skill_path>/references/conventions.md → TDD & Test Traceability
     4. 作業は割当ファイルに限定
     5. 上記規則に従い Test 先行で作業:
-       a. Red: 担当 Test Case の Test を "[#<N> TC-<n>]" タグ付きで作成・実行し、
-          想定どおりの理由での失敗を確認 (Test がコンパイル不能な場合は最小限の stub を
-          同時にコミット)。コミット: "Issue #<N>: add failing tests for <TC IDs>"
+       a. Red: 担当 Test Case の Test を "[#<N> TC-<n>]" tag 付きで作成・実行し、
+          想定どおりの理由での失敗を確認 (Test が compile 不能な場合は最小限の stub を
+          同時に commit)。commit: "Issue #<N>: add failing tests for <TC IDs>"
        b. Green: Test を通過させる最小限のコードを作成。
-          コミット: "Issue #<N>: <specific change>"
-       c. Refactor: 全 Test の通過を維持したまま整理。変更があればコミット。
+          commit: "Issue #<N>: <specific change>"
+       c. Refactor: 全 Test の通過を維持したまま整理。変更があれば commit。
        担当 Stream の Test Cases が "N/A — <reason>" の場合、Test 関連手順 (Red, Green,
        Refactor) を省略し、記載の作業を実施後、手順 6 へ進む。
-    6. プロジェクトの全テストスイートを実行 (<test command from the epic's Test Strategy>)。
+    6. プロジェクトの全 test suite を実行 (<test command from the epic's Test Strategy>)。
        自身の変更で既存の通過 Test が失敗した場合は自身の変更を修正。他の稼働中 Stream や
-       他の未完了 Task の失敗 Test は想定内のため放置。他者の変更によりテストスイートが
-       ビルド不能の場合は、待機して pull。自身では修正しない。
+       他の未完了 Task の失敗 Test は想定内のため放置。他者の変更により test suite が
+       build 不能の場合は、待機して pull。自身では修正しない。
     7. 進捗を更新: .claude/epics/<epic>/updates/<N>/stream-<X>.md
     8. 担当範囲外のファイル変更が必要な場合、進捗ファイルに記録して待機
     9. git 操作での --force 使用は厳禁
@@ -205,9 +205,9 @@ stack delivery の場合、全 Stream の完了後に Task を Submit (`sync.md`
 **起動条件**: Epic 内の着手可能な全 Issue に対する並列エージェントの一括起動をユーザーが要望。
 
 ### Preflight
-- `.claude/epics/<name>/epic.md` の存在と `github:` フィールドの有無 (Sync 済みであること) を確認。
-- 未コミットの変更を確認: `git status --porcelain`。変更が残存する場合は中断。
-- Epic ブランチの存在を確認: `git branch -a | grep "epic/<name>"`
+- `.claude/epics/<name>/epic.md` の存在と `github:` field の有無 (Sync 済みであること) を確認。
+- 未 commit の変更を確認: `git status --porcelain`。変更が残存する場合は中断。
+- Epic branch の存在を確認: `git branch -a | grep "epic/<name>"`
 
 ### Process
 
@@ -234,11 +234,11 @@ stack delivery の場合、全 Stream の完了後に Task を Submit (`sync.md`
 複数エージェントが同一 Worktree で同時に作業する場合:
 
 - 各エージェントは割当 Stream の範囲内のファイルのみ操作。
-- エージェントは `Issue #<N>: <description>` 形式で頻繁にコミット。
+- エージェントは `Issue #<N>: <description>` 形式で頻繁に commit。
 - 共有ファイルの変更前に `git status <file>` を確認。他エージェントが変更中の場合、待機して先に pull。
-- エージェント間の同期はコミット経由: 新規ファイル作業の開始前に `git pull --rebase origin epic/<name>`。stack delivery では Layer ブランチは Submit までローカルのみに存在するため、pull を省略。
+- エージェント間の同期は commit 経由: 新規ファイル作業の開始前に `git pull --rebase origin epic/<name>`。stack delivery では Layer branch は Submit までローカルのみに存在するため、pull を省略。
 - 競合の自動解決は厳禁。エージェントは報告して一時停止。
 - Stream の完了条件は、自身の Test Case が全て通過し、既存の通過 Test に失敗がないこと。他の稼働中 Stream や未完了 Task の Red Test は作業中のため想定内であり、放置。Test を通過させる目的での Test の弱化・削除は厳禁。
-- `--force` フラグは一切使用禁止。
+- `--force` flag は一切使用禁止。
 
-調整を要しがちな共有ファイル (型定義、設定、package.json) は指定の一 Stream が担当し、他 Stream はそのコミット後に pull。
+調整を要しがちな共有ファイル (型定義、設定、package.json) は指定の一 Stream が担当し、他 Stream はその commit 後に pull。

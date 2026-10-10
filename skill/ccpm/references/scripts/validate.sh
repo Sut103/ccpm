@@ -11,12 +11,12 @@ echo ""
 errors=0
 warnings=0
 
-# ディレクトリ構成の確認
-echo "📁 ディレクトリ構成:"
-[ -d ".claude" ] && echo "  ✅ .claude ディレクトリあり" || { echo "  ❌ .claude ディレクトリ不在"; ((errors++)); }
-[ -d ".claude/prds" ] && echo "  ✅ PRD ディレクトリあり" || echo "  ⚠️ PRD ディレクトリ不在"
-[ -d ".claude/epics" ] && echo "  ✅ Epic ディレクトリあり" || echo "  ⚠️ Epic ディレクトリ不在"
-[ -d ".claude/rules" ] && echo "  ✅ Rules ディレクトリあり" || echo "  ⚠️ Rules ディレクトリ不在"
+# directory 構成の確認
+echo "📁 directory 構成:"
+[ -d ".claude" ] && echo "  ✅ .claude directory あり" || { echo "  ❌ .claude directory 不在"; ((errors++)); }
+[ -d ".claude/prds" ] && echo "  ✅ PRD directory あり" || echo "  ⚠️ PRD directory 不在"
+[ -d ".claude/epics" ] && echo "  ✅ Epic directory あり" || echo "  ⚠️ Epic directory 不在"
+[ -d ".claude/rules" ] && echo "  ✅ Rules directory あり" || echo "  ⚠️ Rules directory 不在"
 echo ""
 
 # 孤立ファイルの確認

@@ -4,7 +4,7 @@ echo "状況を取得中..."
 echo ""
 echo ""
 
-# Frontmatter フィールドの値 (本文の行は無視)
+# Frontmatter field の値 (本文の行は無視)
 fm_get() {
   awk -v k="$1" '
     NR==1 && /^---$/ {fm=1; next}
@@ -69,7 +69,7 @@ else
   echo "================================"
   echo ""
 
-  # メタデータの抽出
+  # metadata の抽出
   status=$(grep "^status:" "$epic_file" | head -1 | sed 's/^status: *//')
   progress=$(grep "^progress:" "$epic_file" | head -1 | sed 's/^progress: *//')
   github=$(grep "^github:" "$epic_file" | head -1 | sed 's/^github: *//')
@@ -120,7 +120,7 @@ else
   echo ""
   echo "📊 内訳:"
   echo "  Task 総数: $total"
-  echo "  ✅ クローズ済み: $closed"
+  echo "  ✅ close 済み: $closed"
   echo "  🔍 レビュー中: $in_review"
   echo "  🛠️ 進行中: $in_progress"
   echo "  🔄 着手可能: $open"

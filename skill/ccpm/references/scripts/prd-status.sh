@@ -5,7 +5,7 @@ echo "===================="
 echo ""
 
 if [ ! -d ".claude/prds" ]; then
-  echo "PRD ディレクトリ不在。"
+  echo "PRD directory 不在。"
   exit 0
 fi
 

@@ -10,7 +10,7 @@
 
 ### Preflight
 - `.claude/epics/<name>/epic.md` の存在と Frontmatter の妥当性を確認。
-- Epic ディレクトリに連番 Task ファイル (001.md, 002.md...) が既存の場合、一覧を提示し、再作成前に削除の可否を確認。
+- Epic directory に連番 Task ファイル (001.md, 002.md...) が既存の場合、一覧を提示し、再作成前に削除の可否を確認。
 - Epic の status が "completed" の場合、続行前にユーザーへ警告。
 
 ### Process
@@ -18,11 +18,11 @@
 Epic を全文読了。並列性を分析し、ファイル競合なしに同時進行可能な作業単位を特定。
 
 **検討対象の Task 種別:**
-- Setup: 環境、雛形、依存パッケージ
-- Data: モデル、スキーマ、マイグレーション
-- API: エンドポイント、サービス、連携
-- UI: コンポーネント、ページ、スタイル
-- Docs: README、API 文書、変更履歴
+- Setup: 環境、scaffolding、依存 package
+- Data: model、schema、migration
+- API: endpoint、サービス、連携
+- UI: component、ページ、スタイル
+- Docs: README、API 文書、changelog
 
 Test は独立した Task 種別ではない。各 Task が自身の振る舞いに対する Test を先行作成 (`conventions.md` → TDD & Test Traceability 参照)。Epic の Acceptance Test Matrix の全 Test Scenario (`TS-<n>`) を、当該振る舞いを実装する Task で網羅。複数 Task にまたがる e2e Scenario は、そのフローを完成させる Task (通常は依存連鎖の末尾) へ割当。Epic が Test 基盤導入用の Setup Task を計画している場合、他の全 Task は当該 Task を `depends_on` に記載。
 
@@ -122,7 +122,7 @@ stack delivery の場合、続けて `bash references/scripts/stack-plan.sh <nam
 2. 002.md - <Title> (base: 001)
 ```
 
-スクリプトが循環依存を報告した場合、続行前に `depends_on` を修正。
+script が循環依存を報告した場合、続行前に `depends_on` を修正。
 
 **完了後**: 「✅ Epic <name> の Task を N 件作成」と報告し、「GitHub へ push する場合の指示例: <name> の Epic を Sync」と提案。
 

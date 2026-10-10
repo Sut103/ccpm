@@ -1,7 +1,7 @@
 # !/bin/bash
-# PRD ディレクトリの存在確認
+# PRD directory の存在確認
 if [ ! -d ".claude/prds" ]; then
-  echo "📁 PRD ディレクトリ不在。最初の PRD の作成: /pm:prd-new <feature-name>"
+  echo "📁 PRD directory 不在。最初の PRD の作成: /pm:prd-new <feature-name>"
   exit 0
 fi
 

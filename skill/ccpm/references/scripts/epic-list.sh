@@ -3,7 +3,7 @@ echo "Epic を取得中..."
 echo ""
 echo ""
 
-[ ! -d ".claude/epics" ] && echo "📁 Epic ディレクトリ不在。最初の Epic の作成: /pm:prd-parse <feature-name>" && exit 0
+[ ! -d ".claude/epics" ] && echo "📁 Epic directory 不在。最初の Epic の作成: /pm:prd-parse <feature-name>" && exit 0
 [ -z "$(ls -d .claude/epics/*/ 2>/dev/null)" ] && echo "📁 Epic 不在。最初の Epic の作成: /pm:prd-parse <feature-name>" && exit 0
 
 echo "📚 プロジェクトの Epic"
@@ -20,7 +20,7 @@ for dir in .claude/epics/*/; do
   [ -d "$dir" ] || continue
   [ -f "$dir/epic.md" ] || continue
 
-  # メタデータの抽出
+  # metadata の抽出
   n=$(grep "^name:" "$dir/epic.md" | head -1 | sed 's/^name: *//')
   s=$(grep "^status:" "$dir/epic.md" | head -1 | sed 's/^status: *//' | tr '[:upper:]' '[:lower:]')
   p=$(grep "^progress:" "$dir/epic.md" | head -1 | sed 's/^progress: *//')

@@ -7,7 +7,7 @@ echo "🔄 進行中の作業"
 echo "==================="
 echo ""
 
-# updates ディレクトリ内の稼働中作業を確認
+# updates directory 内の稼働中作業を確認
 found=0
 
 if [ -d ".claude/epics" ]; then

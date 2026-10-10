@@ -10,7 +10,7 @@ echo "状況を取得中..."
 echo ""
 echo ""
 
-# Frontmatter フィールドの値 (本文の行は無視)
+# Frontmatter field の値 (本文の行は無視)
 fm_get() {
   awk -v k="$1" '
     NR==1 && /^---$/ {fm=1; next}
@@ -110,6 +110,6 @@ total_tasks=$(find .claude/epics -name "[0-9]*.md" 2>/dev/null | wc -l)
 open_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *open" {} \; 2>/dev/null | wc -l)
 review_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *in-review" {} \; 2>/dev/null | wc -l)
 closed_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *closed" {} \; 2>/dev/null | wc -l)
-echo "  Task: 未着手 $open_tasks、レビュー中 $review_tasks、クローズ済み $closed_tasks、総数 $total_tasks"
+echo "  Task: 未着手 $open_tasks、レビュー中 $review_tasks、close 済み $closed_tasks、総数 $total_tasks"
 
 exit 0
